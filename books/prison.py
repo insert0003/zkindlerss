@@ -39,46 +39,11 @@ class Prison(BaseFeedBook):
             yield (section, url, ftitle, tmphtml, '', None)
 
     def ParseFeedUrls(self):
-        mainurl = "http://www.cartoonmad.com"
-        urls = []
-        opener = URLOpener(self.host, timeout=60)
-        result = opener.open(mainurl)
-        if result.status_code != 200:
-            self.log.warn('fetch rss failed:%s' % mainurl)
-            return []
-        content = result.content.decode(self.feed_encoding)
-
-        comic_name = '監獄學園'.decode("utf8")
+        mainurl = "http://www.cartoonmad.com/comic/1416.html"
         title = '监狱学园'.decode("utf8")
-        soup = BeautifulSoup(content, "lxml")
-        mhnew = soup.findAll("div", {"style": 'overflow:hidden;'})
         
-        for obj in mhnew:
-            name = obj.find("a").text
-            if ( name[0:len(comic_name)] == comic_name ):
-                href = "http://www.cartoonmad.com" + obj.find("a").get("href")
-                print href
-                comic_opener = URLOpener(self.host, timeout=60)
-                comic_page = comic_opener.open(href)
-                if comic_page.status_code != 200:
-                    self.log.warn('fetch rss failed:%s' % mainurl)
-                    return []
+        href = self.GetNewComic(title, mainurl)
+        if href == "":
+            return []
 
-                comic_content = comic_page.content.decode(self.feed_encoding)
-                comic_body = BeautifulSoup(comic_content, "lxml")
-                ul = comic_body.find("select").findAll("option")
-                for mh in ul:
-                    mhhref = mh.get("value")
-                    if mhhref:
-                        pagehref = "http://www.cartoonmad.com/comic/" + mhhref
-                        pageopener = URLOpener(self.host, timeout=60)
-                        pageresult = pageopener.open(pagehref)
-                        if pageresult.status_code != 200:
-                            self.log.warn('fetch rss failed:%s' % mainurl)
-                            return []
-                        body = pageresult.content.decode(self.feed_encoding)
-                        sp = BeautifulSoup(body, "lxml")
-                        mhpic = sp.find("img", {"oncontextmenu": 'return false'}).get("src")
-                        print mhpic
-                        urls.append( (title, mh.text, mhpic, None))
-        return urls
+        return self.GetComicUrls(title, href)
