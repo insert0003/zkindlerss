@@ -19,21 +19,16 @@ class Uplogs(BaseHandler):
     
 
     def POST(self):
-#        name = '海贼王'.decode("utf")
-#        count = 867
-#        dl = UpdateLog(comicname=name, updatecount=count)
-#        dl.put()
         uplogs = UpdateLog.all()
         for log in uplogs:
             name = log.comicname
             count = int(web.input().get(name.encode("utf")))
-            print name.encode("utf") + ":" + str(count)
-            if count != log.updatecount:
+            if count == 0:
+                log.delete()
+            elif count != log.updatecount:
                 log.delete()
                 dl = UpdateLog(comicname=name, updatecount=count)
                 dl.put()
-            elif count == 0:
-                log.delete()
 
         newname = web.input().get("newname")
         newcount = web.input().get("newcount")

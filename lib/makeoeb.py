@@ -1,6 +1,7 @@
 #!usr/bin/Python
 # -*- coding:utf-8 -*-
 #将News feed生成的HTML文件转换成内存中的OEB格式
+#Author: cdhigh <https://github.com/cdhigh>
 import os, sys, uuid
 
 #这两个是必须先引入的，会有一些全局初始化
@@ -15,10 +16,12 @@ from config import *
 def MimeFromFilename(f):
     #从文件名生成MIME
     f = f.lower()
-    if f.endswith(('.gif','.png')):
-        return r"image/"+f[-3:]
-    elif f.endswith(('.jpg','.jpeg')):
-        return r"image/jpeg"
+    if f.endswith(('.gif', '.png', 'bmp')):
+        return r'image/' + f[-3:]
+    elif f.endswith(('.jpg', '.jpeg')):
+        return r'image/jpeg'
+    elif f.endswith('.tiff'):
+        return r'image/' + f[-4:]
     else:
         return ''
 
@@ -67,7 +70,8 @@ def getOpts(output_type='kindle'):
     setattr(opts, "pretty_print", False)
     setattr(opts, "prefer_author_sort", True)
     setattr(opts, "share_not_sync", False)
-    setattr(opts, "mobi_file_type", 'old')
+#    setattr(opts, "mobi_file_type", 'old')
+    setattr(opts, "mobi_file_type", 'both')
     setattr(opts, "dont_compress", True)
     setattr(opts, "no_inline_toc", True)
     setattr(opts, "toc_title", "Table of Contents")
@@ -90,7 +94,7 @@ def getOpts(output_type='kindle'):
     setattr(opts, "process_images", True)
     setattr(opts, "mobi_keep_original_images", False)
     setattr(opts, "graying_image", COLOR_TO_GRAY) #changed
-    setattr(opts, "image_png_to_jpg", False) #changed
+    setattr(opts, "image_png_to_jpg", COLOR_TO_GRAY) #changed
     setattr(opts, "fix_indents", False)
     setattr(opts, "reduce_image_to", REDUCE_IMAGE_TO or OutputDevice.screen_size)
     
@@ -110,7 +114,8 @@ def getOpts(output_type='kindle'):
     return opts
     
 def setMetaData(oeb, title='Feeds', lang='zh-cn', date=None, creator='KindleEar',
-    pubtype='periodical:magazine:KindleEar'):
+#    pubtype='periodical:magazine:KindleEar'):
+    pubtype='book:book:KindleEar'):
     oeb.metadata.add('language', lang if lang else 'zh-cn')
     oeb.metadata.add('creator', creator)
     oeb.metadata.add('title', title)

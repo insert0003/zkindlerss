@@ -3,6 +3,7 @@
 """
 KindleEar电子书基类，每本投递到kindle的书籍抽象为这里的一个类。
 可以继承BaseFeedBook类而实现自己的定制书籍。
+cdhigh <https://github.com/cdhigh>
 """
 import os, re, urllib, urlparse, imghdr, datetime, hashlib
 from urllib2 import *
@@ -19,15 +20,13 @@ from StringIO import StringIO
 
 from config import *
 from apps.dbModels import UpdateLog
-
+#base class of Book
 class BaseFeedBook:
-    """ base class of Book """
     title                 = ''
     __author__            = ''
     description           = ''
     max_articles_per_feed = 30
-    #下载多长时间之内的文章，小于等于365则单位为天，大于365则单位为秒，0为不限制
-    oldest_article        = 7
+    oldest_article        = 7    #下载多长时间之内的文章，小于等于365则单位为天，大于365则单位为秒，0为不限制
     host                  = None # 有些网页的图像下载需要请求头里面包含Referer,使用此参数配置
     network_timeout       = None  # None则使用默认
     fetch_img_via_ssl     = False # 当网页为https时，其图片是否也转换成https
@@ -44,15 +43,19 @@ class BaseFeedBook:
     # 如果不提供此图片，软件使用PIL生成一个，但是因为GAE不能使用ImageFont组件
     # 所以字体很小，而且不支持中文标题，使用中文会出错
     mastheadfile = DEFAULT_MASTHEAD
-
-    coverfile = DEFAULT_COVER #封面图片文件
-
+    
+    #封面图片文件，如果值为一个字符串，则对应到images目录下的文件
+    #如果需要在线获取封面或自己定制封面（比如加日期之类的），则可以自己写一个回调函数，输入一个参数（类实例），返回图片的二进制数据（支持gif/jpg/png格式）
+    #回调函数要求为独立的函数，不能为类方法或实例方法。
+    #如果回调函数返回的不是图片或为None，则还是直接使用DEFAULT_COVER
+    coverfile = DEFAULT_COVER
+    
     keep_image = True #生成的MOBI是否需要图片
 
     #是否按星期投递，留空则每天投递，否则是一个星期字符串列表
-    #一旦设置此属性，则网页上设置的星期推送对此书无效
+    #一旦设置此属性，则网页上设置的“星期推送”对此书无效
     #'Monday','Tuesday',...,'Sunday'，大小写敏感
-    #比如设置为['Friday']
+    #比如设置为['Friday'] 或 ['Monday', 'Friday', 'Sunday']
     deliver_days = []
 
     #自定义书籍推送时间，一旦设置了此时间，则网页上设置的时间对此书无效
@@ -86,15 +89,18 @@ class BaseFeedBook:
     # 背景知识：下面所说的标签为HTML标签，比如'body','h1','div','p'等都是标签
 
     # 仅抽取网页中特定的标签段，在一个复杂的网页中抽取正文，这个工具效率最高
+    # 内容为字典列表
     # 比如：keep_only_tags = [dict(name='div', attrs={'id':'article'}),]
     # 这个优先级最高，先处理了这个标签再处理其他标签。
     keep_only_tags = []
 
     # 顾名思义，删除特定标签前/后的所有内容，格式和keep_only_tags相同
+    # 内容为字典列表
     remove_tags_after = []
     remove_tags_before = []
 
     # 内置的几个必须删除的标签，不建议子类修改
+    # 内容为字符串列表
     insta_remove_tags = ['script','object','video','embed','noscript','style','link']
     insta_remove_attrs = ['width','height','onclick','onload','style']
     insta_remove_classes = []
@@ -110,10 +116,10 @@ class BaseFeedBook:
     #---------------end----------------------
 
     # 子类定制的HTML标签清理内容
-    remove_tags = [] # 完全清理此标签
-    remove_ids = [] # 清除标签的id属性为列表中内容的标签
-    remove_classes = [] # 清除标签的class属性为列表中内容的标签
-    remove_attrs = [] # 清除所有标签的特定属性，不清除标签内容
+    remove_tags = [] # 完全清理此标签，为字符串列表
+    remove_ids = [] # 清除标签的id属性为列表中内容的标签，为字符串列表
+    remove_classes = [] # 清除标签的class属性为列表中内容的标签，为字符串列表
+    remove_attrs = [] # 清除所有标签的特定属性，不清除标签内容，为字符串列表
 
     # 添加到每篇文章的CSS，可以更完美的控制文章呈现
     # 仅需要CSS内容，不要包括<style type="text/css"></style>标签
@@ -131,81 +137,6 @@ class BaseFeedBook:
     #(u'8小时最热', 'http://www.qiushibaike.com'),
     feeds = []
 
-    def updatelog(self, name, count):
-        try:
-            mylogs = UpdateLog.all().filter("comicname = ", name)
-            for log in mylogs:
-                log.delete()
-            dl = UpdateLog(comicname=name, updatecount=count)
-            dl.put()
-        except Exception as e:
-            print('UpdateLog failed to save:%s',str(e))
-        return None
-
-    def GetNewComic(self, title, mainurl):
-        href = ""
-        
-        if (title == "") or (mainurl == "") :
-            return href
-       
-        mhlog = UpdateLog.all().filter("comicname = ", title).get()
-        oldNum = mhlog.updatecount
-
-        opener = URLOpener(self.host, timeout=60)
-        result = opener.open(mainurl)
-        if result.status_code != 200:
-            self.log.warn('fetch rss failed:%s' % mainurl)
-            return href
-        
-        content = result.content.decode(self.feed_encoding, 'ignore')
-        soup = BeautifulSoup(content, "lxml")
-        
-        mhs = soup.findAll("table", {"width": '688'})
-        for mh in mhs:
-            comics = mh.findAll("a", {"target": '_blank'})
-            for comic in comics:
-                num = int(comic.text.split(" ")[1])
-                if num > oldNum :
-                    oldNum = num
-                    href = "http://www.cartoonmad.com" + comic.get("href")
-                    print oldNum
-                    print href
-
-        if href != "" :
-            self.updatelog(title, oldNum)
-
-        return href
-
-    def GetComicUrls(self, title, href):
-        urls = []
-
-        comic_opener = URLOpener(self.host, timeout=60)
-        comic_page = comic_opener.open(href)
-        if comic_page.status_code != 200:
-            self.log.warn('fetch rss failed:%s' % href)
-            return []
-
-        comic_content = comic_page.content.decode(self.feed_encoding, 'ignore')
-        comic_body = BeautifulSoup(comic_content, "lxml")
-        ul = comic_body.find("select").findAll("option")
-        if ul is None :
-            return[]
-        else:
-            for mh in ul:
-                mhhref = mh.get("value")
-                if mhhref:
-                    pagehref = "http://www.cartoonmad.com/comic/" + mhhref
-                    pageopener = URLOpener(self.host, timeout=60)
-                    pageresult = pageopener.open(pagehref)
-                    if pageresult.status_code != 200:
-                        self.log.warn('fetch rss failed:%s' % pagehref)
-                        return []
-                    body = pageresult.content.decode(self.feed_encoding, 'ignore')
-                    sp = BeautifulSoup(body, "lxml")
-                    mhpic = sp.find("img", {"oncontextmenu": 'return false'}).get("src")
-                    print mhpic
-                    urls.append( (title, mh.text, mhpic, None))
-        return urls
     #几个钩子函数，基类在适当的时候会调用，
     #子类可以使用钩子函数进一步定制
 
@@ -350,21 +281,23 @@ class BaseFeedBook:
                             threshold = 86400*self.oldest_article #以天为单位
                         
                         if delta.days*86400+delta.seconds > threshold:
-                            self.log.info("Skip old article(%s): %s" % (updated.strftime('%Y-%m-%d %H:%M:%S'),e.link))
+                            self.log.info("Skip old article(%s): %s" % (updated.strftime('%Y-%m-%d %H:%M:%S'), e.link))
                             continue
-                            
+                    
+                    title = e.title if hasattr(e, 'title') else 'Untitled'
+                    
                     #支持HTTPS
                     if hasattr(e, 'link'):
                         if url.startswith('https://'):
                             urlfeed = e.link.replace('http://','https://')
                         else:
                             urlfeed = e.link
-
+                            
                         if urlfeed in urladded:
                             continue
                     else:
                         urlfeed = ''
-
+                    
                     desc = None
                     if isfulltext:
                         summary = e.summary if hasattr(e, 'summary') else None
@@ -382,11 +315,11 @@ class BaseFeedBook:
                             if not urlfeed:
                                 continue
                             else:
-                                self.log.warn('Fulltext feed item no has desc,link to webpage for article.(%s)' % e.title)
-                    urls.append((section, e.title, urlfeed, desc))
+                                self.log.warn('Fulltext feed item no has desc,link to webpage for article.(%s)' % title)
+                    urls.append((section, title, urlfeed, desc))
                     urladded.add(urlfeed)
             else:
-                self.log.warn('fetch rss failed(%s):%s'%(URLOpener.CodeMap(result.status_code), url))
+                self.log.warn('fetch rss failed(%s):%s' % (URLOpener.CodeMap(result.status_code), url))
                 
         return urls
 
@@ -598,7 +531,7 @@ class BaseFeedBook:
         #如果readability解析失败，则启用备用算法（不够好，但有全天候适应能力）
         body = soup.find('body')
         head = soup.find('head')
-        if len(body.contents) == 0:
+        if not body or len(body.contents) == 0:
             from simpleextract import simple_extract
             summary = simple_extract(content)
             soup = BeautifulSoup(summary, "lxml")
@@ -758,9 +691,11 @@ class BaseFeedBook:
         
         self.soupprocessex(soup)
 
-        #插入分享链接
+        #插入分享链接，如果有插入qrcode，则返回(imgName, imgContent)
         if user:
-            self.AppendShareLinksToArticle(soup, user, url)
+            qrimg = self.AppendShareLinksToArticle(soup, user, url)
+            if qrimg:
+                yield ('image/jpeg', url, qrimg[0], qrimg[1], None, None)
 
         content = unicode(soup)
 
@@ -958,10 +893,12 @@ class BaseFeedBook:
         
         self.soupprocessex(soup)
 
-        #插入分享链接
+        #插入分享链接，如果插入了qrcode，则返回(imgName, imgContent)
         if user:
-            self.AppendShareLinksToArticle(soup, user, url)
-
+            qrimg = self.AppendShareLinksToArticle(soup, user, url)
+            if qrimg:
+                yield ('image/jpeg', url, qrimg[0], qrimg[1], None, None)
+                
         content = unicode(soup)
 
         #提取文章内容的前面一部分做为摘要
@@ -1034,16 +971,18 @@ class BaseFeedBook:
             part.save(partData, fmt) #, **info)
             imagesData.append(partData.getvalue())
             
-            #分图和分图重叠20个像素，保证一行字符只能能显示在其中一个分图中
+            #分图和分图重叠20个像素，保证一行字符能显示在其中一个分图中
             top = bottom - 20 if bottom < height else bottom
             
         return imagesData
-        
+    
+    #在文章末尾添加分享链接，如果文章末尾添加了网址的QRCODE，则此函数返回生成的图像(imgName, imgContent)，否则返回None
     def AppendShareLinksToArticle(self, soup, user, url):
-        #在文章末尾添加分享链接
         if not user or not soup:
-            return
+            return None
         FirstLink = True
+        qrimg = None
+        qrimgName = ''
         body = soup.html.body
         if user.evernote and user.evernote_mail:
             href = self.MakeShareLink('evernote', user, url, soup)
@@ -1121,10 +1060,24 @@ class BaseFeedBook:
             ashare = soup.new_tag('a', href=url)
             ashare.string = OPEN_IN_BROWSER
             body.append(ashare)
-
+        if user.qrcode:
+            import lib.qrcode as qr_code
+            if not FirstLink:
+                self.AppendSeperator(soup)
+            body.append(soup.new_tag('br'))
+            qrimgName = 'img%d.jpg' % self.imgindex
+            imgshare = soup.new_tag('img', src=qrimgName)
+            body.append(imgshare)
+            FirstLink = False
+            img = qr_code.make(url)
+            qrimg = StringIO()
+            img.save(qrimg, 'JPEG')
+        
+        return (qrimgName, qrimg.getvalue()) if qrimg else None
+        
     def MakeShareLink(self, sharetype, user, url, soup):
         " 生成保存内容或分享文章链接的KindleEar调用链接 "
-        if sharetype in ('evernote','wiz'):
+        if sharetype in ('evernote', 'wiz'):
             href = "%s/share?act=%s&u=%s&url=" % (DOMAIN, sharetype, user.name)
         elif sharetype == 'pocket':
             href = '%s/share?act=pocket&u=%s&h=%s&t=%s&url=' % (DOMAIN, user.name, (hashlib.md5(user.pocket_acc_token_hash or '').hexdigest()), 
@@ -1368,6 +1321,126 @@ class BaseUrlBook(BaseFeedBook):
         """ return list like [(section,title,url,desc),..] """
         return [(sec,sec,url,'') for sec, url in self.feeds]
 
+class BaseComicBook(BaseFeedBook):
+    """ 漫画专用
+    """
+    title               = u''
+    description         = u''
+    language            = 'zh-tw'
+    feed_encoding       = 'big5'
+    page_encoding       = 'big5'
+    mastheadfile        = 'mh_comic.gif'
+    coverfile           = ''
+    mainurl             = ''
+
+    def Items(self, opts=None, user=None):
+        """
+        生成器，返回一个图片元组，mime,url,filename,content,brief,thumbnail
+        """
+        urls = self.ParseFeedUrls()
+        opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+        imgs = []
+        for section, ftitle, url, desc in urls:
+            opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+            result = opener.open(url)
+            article = result.content 
+            if not article:
+                continue
+           
+            imgtype = imghdr.what(None, article)
+            imgmime = r"image/" + imgtype
+            fnimg = "img%d.%s" % (self.imgindex, 'jpg' if imgtype=='jpeg' else imgtype)
+            imgs.append(fnimg)
+            yield (imgmime, url, fnimg, article, None, None)
+
+	if len(imgs)> 0:
+            tmphtml = '<html><head><title>Picture</title></head><body><img src="'+ '"/><img src="'.join(imgs) + '"/></body></html>'
+            yield (self.title, url, ftitle, tmphtml, '', None)
+
+    def updatelog(self, name, count):
+        try:
+            mylogs = UpdateLog.all().filter("comicname = ", name)
+            for log in mylogs:
+                log.delete()
+            dl = UpdateLog(comicname=name, updatecount=count)
+            dl.put()
+        except Exception as e:
+            default_log.warn("Updatelog failed to save: %s" % str(e))
+        return None
+
+    def GetNewComic(self):
+        href = ""
+        
+        if (self.title == "") or (self.mainurl == "") :
+            return href
+       
+        mhlog = UpdateLog.all().filter("comicname = ", self.title).get()
+	if mhlog is None:
+            default_log.warn("These is no log in db, set to 1")
+            oldNum = 1
+        else:
+	    oldNum = mhlog.updatecount
+
+        opener = URLOpener(self.host, timeout=60)
+        result = opener.open(self.mainurl)
+        if result.status_code != 200:
+            self.log.warn('fetch rss failed:%s' % self.mainurl)
+            return href
+        
+        content = result.content.decode(self.feed_encoding, 'ignore')
+        soup = BeautifulSoup(content, "lxml")
+        
+        mhs = soup.findAll("table", {"width": '688'})
+        for mh in mhs:
+            comics = mh.findAll("a", {"target": '_blank'})
+            for comic in comics:
+                num = int(comic.text.split(" ")[1])
+                if num > oldNum :
+                    oldNum = num
+                    href = "http://www.cartoonmad.com" + comic.get("href")
+
+        if href != "" :
+            self.updatelog(self.title, oldNum)
+
+        return href
+
+    def GetComicUrls(self, href):
+        urls = []
+
+        comic_opener = URLOpener(self.host, timeout=60)
+        comic_page = comic_opener.open(href)
+        if comic_page.status_code != 200:
+            self.log.warn('fetch rss failed:%s' % href)
+            return []
+
+        comic_content = comic_page.content.decode(self.feed_encoding, 'ignore')
+        comic_body = BeautifulSoup(comic_content, "lxml")
+        ul = comic_body.find("select").findAll("option")
+        if ul is None :
+            return[]
+        else:
+            for mh in ul:
+                mhhref = mh.get("value")
+                if mhhref:
+                    pagehref = "http://www.cartoonmad.com/comic/" + mhhref
+                    pageopener = URLOpener(self.host, timeout=60)
+                    pageresult = pageopener.open(pagehref)
+                    if pageresult.status_code != 200:
+                        self.log.warn('fetch rss failed:%s' % pagehref)
+                        return []
+                    body = pageresult.content.decode(self.feed_encoding, 'ignore')
+                    sp = BeautifulSoup(body, "lxml")
+                    mhpic = sp.find("img", {"oncontextmenu": 'return false'}).get("src")
+                    urls.append( (self.title, mh.text, mhpic, None))
+        return urls
+
+    def ParseFeedUrls(self):
+        href = self.GetNewComic()
+        if href == "":
+            return []
+
+        return self.GetComicUrls(href)
+
 
 #几个小工具函数
 def remove_beyond(tag, next):
@@ -1378,8 +1451,8 @@ def remove_beyond(tag, next):
             after = getattr(tag, next)
         tag = tag.parent
 
+#获取BeautifulSoup中的一个tag下面的所有字符串
 def string_of_tag(tag, normalize_whitespace=False):
-    #获取BeautifulSoup中的一个tag下面的所有字符串
     if not tag:
         return ''
     if isinstance(tag, basestring):
@@ -1397,9 +1470,17 @@ def string_of_tag(tag, normalize_whitespace=False):
         ans = re.sub(r'\s+', ' ', ans)
     return ans
 
+#将抓取的网页发到自己邮箱进行调试
 def debug_mail(content, name='page.html'):
-    #将抓取的网页发到自己邮箱进行调试
     from google.appengine.api import mail
     mail.send_mail(SRC_EMAIL, SRC_EMAIL, "KindleEar Debug", "KindlerEar",
     attachments=[(name, content),])
-    
+
+#抓取网页，发送到自己邮箱，用于调试目的
+def debug_fetch(url, name='page.html'):
+    if not name:
+        name = 'page.html'
+    opener = URLOpener()
+    result = opener.open(url)
+    if result.status_code == 200 and result.content:
+        debug_mail(result.content, name)

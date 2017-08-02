@@ -10,8 +10,8 @@ DOMAIN = "https://zkindlerss.appspot.com" #Your domain of app
 TIMEZONE = 8  #Default timezone, you can modify it in webpage after deployed
 
 DEFAULT_MASTHEAD = "mh_default.gif" #default masthead
-DEFAULT_COVER = "" #default cover, leave it empty will not add cover to book
-DEFAULT_COVER_BV = None #default cover for merged-book, None indicates paste all covers into one
+DEFAULT_COVER = "cv_default.jpg" #default cover, leave it empty will not add cover to book
+DEFAULT_COVER_BV = DEFAULT_COVER #default cover for merged-book, None indicates paste all covers into one, =DEFAULT_COVER enable the using of uploaded image.
 
 MY_FEEDS_TITLE = u'KindleEar'
 MY_FEEDS_DESC = u'RSS delivering from KindleEar'
@@ -31,7 +31,7 @@ ALWAYS_CHAR_DETECT = False
 TRUST_ENCODING_IN_HEADER_OR_META = True
 
 #generate brief description for toc item or not.
-GENERATE_TOC_DESC = True
+GENERATE_TOC_DESC = False
 TOC_DESC_WORD_LIMIT = 500
 
 #-------------------add by rexdf-----------
@@ -39,7 +39,7 @@ TOC_DESC_WORD_LIMIT = 500
 TABLE_OF_CONTENTS = u'Table Of Contents'
 
 #description of toc contains image or not
-GENERATE_TOC_THUMBNAIL = True
+GENERATE_TOC_THUMBNAIL = False
 
 #if generate other html toc or not, just for reading in pc
 GENERATE_HTML_TOC = False

@@ -253,8 +253,8 @@ class KindlePaperWhiteOutput(KindleOutput):
     description = _('This profile is intended for the Amazon Kindle PaperWhite')
 
     # Screen size is a best guess
-    screen_size               = (1080, 1440)
-    dpi                       = 300.0
+    screen_size               = (658, 940)
+    dpi                       = 212.0
     comic_screen_size = screen_size
 
 class KindleFireOutput(KindleDXOutput):

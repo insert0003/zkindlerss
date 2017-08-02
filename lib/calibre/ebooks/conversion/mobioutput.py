@@ -171,8 +171,7 @@ class MOBIOutput:
             self.workaround_fire_bugs(self.oeb.inserted_metadata_jacket)
         mobimlizer = MobiMLizer(ignore_tables=opts.linearize_tables)
         mobimlizer(oeb, opts)
-        #write_page_breaks_after_item = True
-        write_page_breaks_after_item = False
+        write_page_breaks_after_item = True
         from calibre.ebooks.mobi.writer2.main import MobiWriter
         writer = MobiWriter(opts, resources, kf8,
                         write_page_breaks_after_item=write_page_breaks_after_item)

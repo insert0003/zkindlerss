@@ -84,6 +84,8 @@ class KeUser(db.Model): # kindleEar User
     twitter = db.BooleanProperty()
     tumblr = db.BooleanProperty()
     browser = db.BooleanProperty()
+    qrcode = db.BooleanProperty() #是否在文章末尾添加文章网址的QRCODE
+    cover = db.BlobProperty() #保存各用户的自定义封面图片二进制内容
     
     @property
     def whitelist(self):
