@@ -115,7 +115,8 @@ def getOpts(output_type='kindle'):
     
 def setMetaData(oeb, title='Feeds', lang='zh-cn', date=None, creator='KindleEar',
 #    pubtype='periodical:magazine:KindleEar'):
-    pubtype='book:book:KindleEar'):
+#    pubtype='book:book:KindleEar'):
+    pubtype='book:comic:KindleEar'):
     oeb.metadata.add('language', lang if lang else 'zh-cn')
     oeb.metadata.add('creator', creator)
     oeb.metadata.add('title', title)
