@@ -29,15 +29,23 @@ EXTH_CODES = {
     'versionnumber': 114,
     'startreading': 116,
     'kf8_header_index': 121,
+    'fixed-layout': 122,
+    'book-type': 123,
+    'orientation-lock': 124,
     'num_of_resources': 125,
+    'original-resolution': 126,
+    'zero-gutter': 127,
+    'zero-margin': 128,
     'kf8_thumbnail_uri': 129,
     'kf8_unknown_count': 131,
+    'RegionMagnification': 132,
     'coveroffset': 201,
     'thumboffset': 202,
     'hasfakecover': 203,
     'lastupdatetime': 502,
     'title': 503,
     'language': 524,
+    'primary-writing-mode': 525,
 }
 
 COLLAPSE_RE = re.compile(r'[ \t\r\n\v]+')
@@ -206,6 +214,24 @@ def build_exth(metadata, prefer_author_sort=False, is_periodical=False,
         exth.write(pack(b'>III', EXTH_CODES['kf8_unknown_count'], 12,
             kf8_unknown_count))
         nrecs += 1
+    #Extra metadata
+    exth.write(pack(b'>II', EXTH_CODES['RegionMagnification'], 13))
+    exth.write(b'false')
+    exth.write(pack(b'>II', EXTH_CODES['book-type'], 13))
+    exth.write(b'comic')
+    exth.write(pack(b'>II', EXTH_CODES['zero-gutter'], 12))
+    exth.write(b'true')
+    exth.write(pack(b'>II', EXTH_CODES['zero-margin'], 12))
+    exth.write(b'true')
+    exth.write(pack(b'>II', EXTH_CODES['primary-writing-mode'], 21))
+    exth.write(b'horizontal-lr')
+    exth.write(pack(b'>II', EXTH_CODES['fixed-layout'], 12))
+    exth.write(b'true')
+    exth.write(pack(b'>II', EXTH_CODES['orientation-lock'], 16))
+    exth.write(b'portrait')
+    exth.write(pack(b'>II', EXTH_CODES['original-resolution'], 17))
+    exth.write(b'1072x1448')
+    nrecs += 8
 
     exth = exth.getvalue()
     trail = len(exth) % 4

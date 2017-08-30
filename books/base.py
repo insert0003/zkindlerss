@@ -1353,9 +1353,8 @@ class BaseComicBook(BaseFeedBook):
             imgs.append(fnimg)
             yield (imgmime, url, fnimg, article, None, None)
 
-	if len(imgs)> 0:
-            tmphtml = '<html><head><title>Picture</title></head><body><img src="'+ '"/><img src="'.join(imgs) + '"/></body></html>'
-            yield (self.title, url, ftitle, tmphtml, '', None)
+            tmphtml = '<html><head><title>Picture</title></head><body><img src="%s" /></body></html>' % fnimg
+            yield (fnimg.split(".")[0], url, ftitle, tmphtml, '', None)
 
     def updatelog(self, name, count):
         try:
@@ -1431,7 +1430,7 @@ class BaseComicBook(BaseFeedBook):
                     body = pageresult.content.decode(self.feed_encoding, 'ignore')
                     sp = BeautifulSoup(body, "lxml")
                     mhpic = sp.find("img", {"oncontextmenu": 'return false'}).get("src")
-                    urls.append( (self.title, mh.text, mhpic, None))
+                    urls.append( (self.title, mh.text.replace(' ', ''), mhpic, None))
         return urls
 
     def ParseFeedUrls(self):
