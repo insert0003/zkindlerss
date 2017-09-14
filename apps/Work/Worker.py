@@ -68,9 +68,6 @@ class Worker(BaseHandler):
                 book4meta = bks[0]
                 mhfile = DEFAULT_MASTHEAD
                 coverfile = DEFAULT_COVER
-                for feed in bks[0].feeds:
-                    self.ProcessComicRSS(username, user, feed)
-                return "Rss comic pushed!"
         else: #多本书合并推送时使用“自定义RSS”的元属性
             book4meta = user.ownfeeds
             mhfile = DEFAULT_MASTHEAD
@@ -169,7 +166,13 @@ class Worker(BaseHandler):
                 book.oldest_article = bk.oldest_article
                 book.fulltext_by_readability = True
                 feeds = bk.feeds
-                book.feeds = [(feed.title, feed.url, feed.isfulltext) for feed in feeds]
+                book.feeds = []
+                for feed in feeds:
+                    main.log.warn("cartoonmad: %s"%feed.title)
+                    if(feed.iscartoonmad):
+                        self.ProcessComicRSS(username, user, feed)
+                    else:
+                        book.feeds.append((feed.title, feed.url, feed.isfulltext))
                 book.url_filters = [flt.url for flt in user.urlfilter]
                 
             # 对于html文件，变量名字自文档,thumbnail为文章第一个img的url
