@@ -168,8 +168,7 @@ class Worker(BaseHandler):
                 feeds = bk.feeds
                 book.feeds = []
                 for feed in feeds:
-                    main.log.warn("cartoonmad: %s"%feed.title)
-                    if(feed.iscartoonmad):
+                    if feed.url.startswith("http://www.cartoonmad.com"):
                         self.ProcessComicRSS(username, user, feed)
                     else:
                         book.feeds.append((feed.title, feed.url, feed.isfulltext))
