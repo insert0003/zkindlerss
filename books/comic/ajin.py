@@ -12,6 +12,6 @@ class AJin(CartoonMadBaseBook):
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
-    mastheadfile        = 'mh_comic.gif'
-    coverfile           = 'cv_ajin.jpg'
+    mastheadfile        = 'mh_default.gif'
+    coverfile           = 'cv_bound.jpg'
     feeds               = [(u'亚人', 'http://www.cartoonmad.com/comic/3572.html')]

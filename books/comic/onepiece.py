@@ -12,6 +12,6 @@ class Onepiece(CartoonMadBaseBook):
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
-    mastheadfile        = 'mh_comic.gif'
-    coverfile           = 'cv_onepiece.jpg'
+    mastheadfile        = 'mh_default.gif'
+    coverfile           = 'cv_bound.jpg'
     feeds               = [(u'海贼王', 'http://www.cartoonmad.com/comic/1152.html')]
