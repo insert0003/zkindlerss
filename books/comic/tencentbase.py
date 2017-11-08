@@ -51,12 +51,11 @@ class TencentBaseBook(BaseComicBook):
                 if newNum < len(contentList):
                     imgList = self.getImgList(contentList[newNum], id)
                     for img in imgList:
-                        print img
                         urls.append((title, img, img, None))
                     self.UpdateLastDelivered(title, newNum+1)
                     if newNum == 0:
                         break
-            
+
         return urls
 
     #更新已经推送的卷序号到数据库
@@ -65,7 +64,7 @@ class TencentBaseBook(BaseComicBook):
         dbItem = LastDelivered.all().filter('username = ', userName).filter('bookname = ', title).get()
         self.last_delivered_volume = u' 第%d话' % num
         if dbItem:
-            dbItem.num = num
+            dbItem.trynum = num
             dbItem.record = self.last_delivered_volume
             dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
         else:
