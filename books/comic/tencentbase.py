@@ -68,7 +68,7 @@ class TencentBaseBook(BaseComicBook):
             dbItem.record = self.last_delivered_volume
             dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
         else:
-            dbItem = LastDelivered(username=userName, bookname=title, num=num, record=self.last_delivered_volume,
+            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
                 datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
         dbItem.put()
 
