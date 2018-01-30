@@ -7,11 +7,11 @@ def getBook():
     return GiantBefore
 
 class GiantBefore(CartoonMadBaseBook):
-    title               = u'进击的巨人BeforeTheFall'
+    title               = u'[漫画]进击的巨人BeforeTheFall'
     description         = u'諫山創'
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
     mastheadfile        = 'mh_default.gif'
     coverfile           = 'cv_bound.jpg'
-    feeds               = [(u'进击的巨人BeforeTheFall', 'http://www.cartoonmad.com/comic/3413.html')]
+    feeds               = [(u'[漫画]进击的巨人BeforeTheFall', 'http://www.cartoonmad.com/comic/3413.html')]

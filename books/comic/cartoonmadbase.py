@@ -44,7 +44,7 @@ class CartoonMadBaseBook(BaseComicBook):
             ul = sel.find_all('option') if sel else None
             if not ul:
                 continue
-                
+               
             for comicPage in ul:
                 href = comicPage.get('value')
                 if href:
@@ -62,7 +62,6 @@ class CartoonMadBaseBook(BaseComicBook):
                     comicSrc = comicImgTag.get('src') if comicImgTag else None
                     if comicSrc:
                         urls.append((title, comicPage.text, comicSrc, None))
-            
             self.UpdateLastDelivered(title, num)
             
         return urls

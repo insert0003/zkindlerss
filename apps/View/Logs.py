@@ -22,7 +22,7 @@ class Mylogs(BaseHandler):
     def GET(self):
         user = self.getcurrentuser()
         try:
-            #mylogs = DeliverLog.all().filter("username = ", user.name).order('-time').fetch(limit=20)
+            #mylogs = DeliverLog.all().filter("username = ", user.name).order('-time').fetch(limit=10)
             mylogs = sorted(DeliverLog.all().filter("username = ", user.name).filter("status != ", 'nonews'), key=attrgetter('time'), reverse=True)[:10]
         except NeedIndexError: #很多人不会部署，经常出现没有建立索引的情况，干脆碰到这种情况直接消耗CPU时间自己排序得了
             mylogs = sorted(DeliverLog.all().filter("username = ", user.name), key=attrgetter('time'), reverse=True)[:10]
@@ -60,7 +60,7 @@ class Mylogs(BaseHandler):
 class RemoveLogs(BaseHandler):
     __url__ = "/removelogs"
     def GET(self):
-        # 停止过期用户的推送
+        #停止过期用户的推送
         for user in KeUser.all().filter('enable_send = ', True):
             if user.expires and (user.expires < datetime.datetime.utcnow()):
                 user.enable_send = False

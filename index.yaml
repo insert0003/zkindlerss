@@ -18,6 +18,11 @@ indexes:
 - kind: DeliverLog
   properties:
   - name: username
+  - name: status
+
+- kind: DeliverLog
+  properties:
+  - name: username
   - name: time
     direction: desc
 

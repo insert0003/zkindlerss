@@ -7,11 +7,11 @@ def getBook():
     return KissXDeath
 
 class KissXDeath(CartoonMadBaseBook):
-    title               = u'KissXDeath'
+    title               = u'[漫画]KissXDeath'
     description         = u'叶恭弘创作，2014年09月22日新连载在电子漫画周刊《少年Jump+》上的作品'
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
     mastheadfile        = 'mh_default.gif'
     coverfile           = 'cv_bound.jpg'
-    feeds               = [(u'KissXDeath', 'http://www.cartoonmad.com/comic/4329.html')]
+    feeds               = [(u'[漫画]KissXDeath', 'http://www.cartoonmad.com/comic/4329.html')]

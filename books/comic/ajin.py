@@ -7,11 +7,11 @@ def getBook():
     return AJin
 
 class AJin(CartoonMadBaseBook):
-    title               = u'亚人'
+    title               = u'[漫画]亚人'
     description         = u'日本漫画家樱井画门创作的漫画'
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
     mastheadfile        = 'mh_default.gif'
     coverfile           = 'cv_bound.jpg'
-    feeds               = [(u'亚人', 'http://www.cartoonmad.com/comic/3572.html')]
+    feeds               = [(u'[漫画]亚人', 'http://www.cartoonmad.com/comic/3572.html')]

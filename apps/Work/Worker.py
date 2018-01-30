@@ -340,8 +340,8 @@ class Worker(BaseHandler):
         
         #新生成的图片再整体缩小到设定大小
         rw,rh = opts.reduce_image_to
-        ratio = min(float(rw)/float(new_size[0]), float(rh)/float(new_size[0]))
-        imgnew = imgnew.resize((int(new_size[0]*ratio), int(new_size[1]*ratio)))
+        ratio = min(float(rw) / float(new_size[0]), float(rh) / float(new_size[1]))
+        imgnew = imgnew.resize((int(new_size[0] * ratio), int(new_size[1] * ratio)))
         data = StringIO.StringIO()
         imgnew.save(data, 'JPEG')
         return data.getvalue()
@@ -364,13 +364,13 @@ class Worker(BaseHandler):
         id_, href = oeb.manifest.generate('masthead', DEFAULT_MASTHEAD) # size:600*60
         oeb.manifest.add(id_, href, MimeFromFilename(DEFAULT_MASTHEAD))
         oeb.guide.add('masthead', 'Masthead Image', href)
-        
+
         id_, href = oeb.manifest.generate('cover', DEFAULT_COVER)
         item = oeb.manifest.add(id_, href, MimeFromFilename(DEFAULT_COVER))
 
         oeb.guide.add('cover', 'Cover', href)
         oeb.metadata.add('cover', id_)
-            
+
         itemcnt, imgindex = 0, 0
         sections = OrderedDict()
         toc_thumbnails = {} #map img-url -> manifest-href
@@ -395,7 +395,7 @@ class Worker(BaseHandler):
             for sec_or_media, url, title, content, brief, thumbnail in book.Items():
                 if not sec_or_media or not title or not content:
                     continue
-                
+
                 if sec_or_media.startswith(r'image/'):
                     id_, href = oeb.manifest.generate(id='img', href=title)
                     item = oeb.manifest.add(id_, href, sec_or_media, data=content)
@@ -413,8 +413,8 @@ class Worker(BaseHandler):
             excFileName, excFuncName, excLineNo = get_exc_location()
             main.log.warn("Failed to push <%s> : %s, in file '%s', %s (line %d)" % (
                 book.title, str(e), excFileName, excFuncName, excLineNo))
-            return "Failed to push book <%s>!"%title 
-        
+            return "Failed to push book <%s>!"%title
+
         volumeTitle = ''
         if itemcnt > 0:
             insertHtmlToc = False
@@ -422,7 +422,7 @@ class Worker(BaseHandler):
             volumeTitle = book.LastDeliveredVolume()
             oeb.metadata.clear('title')
             oeb.metadata.add('title', feed.title + volumeTitle)
-            
+
             InsertToc(oeb, sections, toc_thumbnails, insertHtmlToc, insertThumbnail)
             oIO = byteStringIO()
             o = EPUBOutput() if user.book_type == "epub" else MOBIOutput()

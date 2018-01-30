@@ -7,11 +7,11 @@ def getBook():
     return OnePunch
 
 class OnePunch(CartoonMadBaseBook):
-    title               = u'一拳超人'
+    title               = u'[漫画]一拳超人'
     description         = u'日本漫画家One创作的少年漫画'
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
     mastheadfile        = 'mh_default.gif'
     coverfile           = 'cv_bound.jpg'
-    feeds               = [(u'一拳超人', 'http://www.cartoonmad.com/comic/3583.html')]
+    feeds               = [(u'[漫画]一拳超人', 'http://www.cartoonmad.com/comic/3583.html')]

@@ -7,11 +7,11 @@ def getBook():
     return Yuna
 
 class Yuna(CartoonMadBaseBook):
-    title               = u'摇曳庄的幽奈小姐'
+    title               = u'[漫画]摇曳庄的幽奈小姐'
     description         = u'三浦忠弘（ミウラタダヒロ）创作，2016年2月8日开始连载于《周刊少年JUMP》上的漫画'
     language            = 'zh-tw'
     feed_encoding       = 'big5'
     page_encoding       = 'big5'
     mastheadfile        = 'mh_default.gif'
     coverfile           = 'cv_bound.jpg'
-    feeds               = [(u'摇曳庄的幽奈小姐', 'http://www.cartoonmad.com/comic/4897.html')]
+    feeds               = [(u'[漫画]摇曳庄的幽奈小姐', 'http://www.cartoonmad.com/comic/4897.html')]
