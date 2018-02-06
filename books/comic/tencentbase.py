@@ -1,12 +1,13 @@
 #!/usr/bin/env python3
 # encoding: utf-8
 #http://ac.qq.com网站的漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
+import datetime
 import json
 from time import sleep
 import re
-import datetime
-import requests
 from config import TIMEZONE
+from lib.urlopener import URLOpener
+from lib.autodecoder import AutoDecoder
 from books.base import BaseComicBook
 from apps.dbModels import LastDelivered
 
@@ -19,21 +20,14 @@ class TencentBaseBook(BaseComicBook):
     page_encoding       = ''
     mastheadfile        = ''
     coverfile           = ''
-    host                = 'http://ac.qq.com'
+    host                = 'http://m.ac.qq.com'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
-
-    requestSession = requests.session()
-    UA = 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) \
-        AppleWebKit/537.36 (KHTML, like Gecko) \
-        Chrome/52.0.2743.82 Safari/537.36'  # Chrome on win10
-    requestSession.headers.update({'User-Agent': UA})
 
     #使用此函数返回漫画图片列表[(section, title, url, desc),...]
     def ParseFeedUrls(self):
         urls = [] #用于返回
         
         userName = self.UserName()
-
         for item in self.feeds:
             title, url = item[0], item[1]
             
@@ -44,12 +38,12 @@ class TencentBaseBook(BaseComicBook):
             else:
                 oldNum = lastCount.num
 
-            id = url.split("/")[6]
-            contentList = self.getContent(id)
+            comic_id = url.split("/")[6]
+            chapterList = self.getChapterList(comic_id)
             for deliverCount in range(5):
                 newNum = oldNum + deliverCount
-                if newNum < len(contentList):
-                    imgList = self.getImgList(contentList[newNum], id)
+                if newNum < len(chapterList):
+                    imgList = self.getImgList(chapterList[newNum], comic_id)
                     for img in imgList:
                         urls.append((title, img, img, None))
                     self.UpdateLastDelivered(title, newNum+1)
@@ -72,53 +66,53 @@ class TencentBaseBook(BaseComicBook):
                 datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
         dbItem.put()
 
-    def getContent(self, id):
-        getComicInfoUrl = 'http://m.ac.qq.com/GetData/getComicInfo?id={}'.format(id)
-        self.requestSession.cookies.update({'ac_refer': 'http://m.ac.qq.com'})
-        self.requestSession.headers.update({'Referer': 'http://m.ac.qq.com/Comic/view/id/{}/cid/1'.format(id)})
-        getComicInfo = self.requestSession.get(getComicInfoUrl)
-        comicInfoJson = getComicInfo.text
-        comicInfo = json.loads(comicInfoJson)
-        getChapterListUrl = 'http://m.ac.qq.com/GetData/getChapterList?id={}'.format(id)
-        getChapterList = self.requestSession.get(getChapterListUrl)
-        contentJson = json.loads(getChapterList.text)
+    #获取漫画章节列表
+    def getChapterList(self, comic_id):
+        decoder = AutoDecoder(isfeed=False)
+        opener = URLOpener(self.host, timeout=60)
+
+        getChapterListUrl = 'http://m.ac.qq.com/GetData/getChapterList?id={}'.format(comic_id)
+        result = opener.open(getChapterListUrl)
+        if result.status_code != 200 or not result.content:
+            self.log.warn('fetch comic page failed: %s' % url)
+            return None
+            
+        content = result.content
+        content = self.AutoDecodeContent(content, decoder, self.page_encoding, opener.realurl, result.headers)
+
+        contentJson = json.loads(content)
         count = contentJson['length']
-        sortedContentList = []
+        chapterList = []
         for i in range(count + 1):
             for item in contentJson:
                 if isinstance(contentJson[item], dict) and contentJson[item].get('seq') == i:
-                    sortedContentList.append({item: contentJson[item]})
+                    chapterList.append({item: contentJson[item]})
                     break
-        return sortedContentList
+        return chapterList
 
-    def getImgList(self, contentJson, comic_id):
-        retry_num = 0
-        retry_max = 5
-        while True:
-            try:
-                cid = list(contentJson.keys())[0]
-                self.requestSession.headers.update({'Referer': 'http://ac.qq.com/Comic/comicInfo/id/{}'.format(comic_id)})
-                cid_page = self.requestSession.get('http://ac.qq.com/ComicView/index/id/{0}/cid/{1}'.format(comic_id, cid),
-                                            timeout=2).text
-                base64data = re.findall(r"data\s*:\s*'(.+?)'", cid_page)[0][1:]
-                img_detail_json = json.loads(self.__decode_base64_data(base64data))
-                imgList = []
-                for img_url in img_detail_json.get('picture'):
-                    imgList.append(img_url['url'])
-                return imgList
-                break
-            except (KeyboardInterrupt, SystemExit):
-                print('\n\n中断下载！')
-                raise
-            except:
-                retry_num += 1
-                if retry_num >= retry_max:
-                    raise
-                print('下载失败，重试' + str(retry_num) + '次')
-                sleep(2)
+    #获取漫画图片列表
+    def getImgList(self, chapterJson, comic_id):
+        decoder = AutoDecoder(isfeed=False)
+        opener = URLOpener(self.host, timeout=60)
+        
+        cid = list(chapterJson.keys())[0]
+        getImgListUrl = 'http://ac.qq.com/ComicView/index/id/{0}/cid/{1}'.format(comic_id, cid)
+        result = opener.open(getImgListUrl)
+        if result.status_code != 200 or not result.content:
+            self.log.warn('fetch comic page failed: %s' % url)
+            return None
+            
+        content = result.content
+        cid_page = self.AutoDecodeContent(content, decoder, self.page_encoding, opener.realurl, result.headers)
 
-        return []
+        base64data = re.findall(r"data\s*:\s*'(.+?)'", cid_page)[0][1:]
+        img_detail_json = json.loads(self.__decode_base64_data(base64data))
+        imgList = []
+        for img_url in img_detail_json.get('picture'):
+            imgList.append(img_url['url'])
+        return imgList
 
+    #漫画Base64解码数据
     def __decode_base64_data(self, base64data):
         base64DecodeChars = [- 1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1,
                             -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, -1, 62, -1, -1, -1,
