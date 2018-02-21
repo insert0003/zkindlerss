@@ -73,6 +73,8 @@ class BaseHandler:
                book=book, status=status)
             dl.put()
 
+            #漫画书籍的book格式为【漫画名 期数】
+            #通过titles的长度判断是否为漫画，更新记录。
             titles = book.split(" ")
             if len(titles) != 1:
                 dbItem = LastDelivered.all().filter('username = ', name).filter('bookname = ', titles[0]).get()

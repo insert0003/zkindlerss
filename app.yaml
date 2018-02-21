@@ -46,4 +46,4 @@ handlers:
   
 - url: /.*
   script: apps.module_front.app
-
+  
