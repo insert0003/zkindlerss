@@ -49,6 +49,9 @@ class TencentBaseBook(BaseComicBook):
             for deliverCount in range(5):
                 newNum = oldNum + deliverCount
                 if newNum < len(chapterList):
+                    if self.isVipChapter(chapterList[newNum]):
+                        print("Chapter {} is Vip, waiting for free.".format(newNum))
+                        break
                     imgList = self.getImgList(chapterList[newNum], comic_id)
                     for img in imgList:
                         urls.append((title, img, img, None))
@@ -57,6 +60,15 @@ class TencentBaseBook(BaseComicBook):
                         break
 
         return urls
+
+    #判断是否为VIP章节
+    def isVipChapter(self, chapterJson):
+        isVip = False
+        cid = list(chapterJson.keys())[0]
+        if chapterJson.get(cid).get('v') == '2':
+            isVip = True
+
+        return isVip
 
     #更新已经推送的卷序号到数据库
     def UpdateLastDelivered(self, title, num):
