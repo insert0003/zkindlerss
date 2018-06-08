@@ -62,6 +62,7 @@ class CartoonMadBaseBook(BaseComicBook):
                     comicSrc = comicImgTag.get('src') if comicImgTag else None
                     if comicSrc:
                         urls.append((title, comicPage.text, comicSrc, None))
+                        self.log.warn('comicSrc: %s' % comicSrc)
 
             self.UpdateLastDelivered(title, num)
             
@@ -116,6 +117,7 @@ class CartoonMadBaseBook(BaseComicBook):
             for comicTable in allComicTable:
                 comicVolumes = comicTable.find_all('a', {'target': '_blank'})
                 for volume in comicVolumes:
+                    self.log.warn('volume: %s' % volume)
                     texts = volume.text.split(' ')
                     if len(texts) > 2 and texts[1].isdigit() and volume.get('href'):
                         num = int(texts[1])
