@@ -1,6 +1,6 @@
 application: zkindlerss
 module: worker
-version: 4
+version: 4-2
 runtime: python27
 api_version: 1
 threadsafe: true
