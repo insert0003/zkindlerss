@@ -10,6 +10,8 @@ from lib.autodecoder import AutoDecoder
 from books.base import BaseComicBook
 from apps.dbModels import LastDelivered
 
+import imghdr, urllib2
+
 class CartoonMadBaseBook(BaseComicBook):
     title               = u''
     description         = u''
@@ -70,6 +72,57 @@ class CartoonMadBaseBook(BaseComicBook):
             self.UpdateLastDelivered(title, num)
             
         return urls
+
+    #生成器，返回一个图片元组，mime,url,filename,content,brief,thumbnail
+    def Items(self):
+        urls = self.ParseFeedUrls()
+        opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+        decoder = AutoDecoder(isfeed=False)
+        prevSection = ''
+        min_width, min_height = self.min_image_size if self.min_image_size else (0, 0)
+        htmlTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html;charset=utf-8"><title>%s</title></head><body><img src="%s"/></body></html>'
+
+        for section, fTitle, url, desc in urls:
+            # if section != prevSection or prevSection == '':
+            #         decoder.encoding = '' #每个小节都重新检测编码[当然是在抓取的是网页的情况下才需要]
+            #         prevSection = section
+            #         opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+            #         if self.needs_subscription:
+            #             result = self.login(opener, decoder)
+
+            # result = opener.open(url)
+            # content = result.content
+            content = urllib2.urlopen(url).read()
+            if not content:
+                continue
+
+            imgFilenameList = []
+
+            #先判断是否是图片
+            imgType = imghdr.what(None, content)
+            if imgType:
+                content = self.process_image_comic(content)
+                if content:
+                    if isinstance(content, (list, tuple)): #一个图片分隔为多个图片
+                        imgIndex = self.imgindex
+                        for idx, imgPartContent in enumerate(content):
+                            imgType = imghdr.what(None, imgPartContent)
+                            imgMime = r"image/" + imgType
+                            fnImg = "img%d_%d.jpg" % (imgIndex, idx)
+                            imgPartUrl = url[:-4]+"_%d.jpg"%idx
+                            imgFilenameList.append(fnImg)
+                            yield (imgMime, imgPartUrl, fnImg, imgPartContent, None, True)
+                    else: #单个图片
+                        imgType = imghdr.what(None, content)
+                        imgMime = r"image/" + imgType
+                        fnImg = "img%d.%s" % (self.imgindex, 'jpg' if imgType=='jpeg' else imgType)
+                        imgFilenameList.append(fnImg)
+                        yield (imgMime, url, fnImg, content, None, None)
+
+            #每个图片当做一篇文章，否则全屏模式下图片会挤到同一页
+            for imgFilename in imgFilenameList:
+                tmpHtml = htmlTemplate % (fTitle, imgFilename)
+                yield (imgFilename.split('.')[0], url, fTitle, tmpHtml, '', None)
 
     #更新已经推送的卷序号到数据库
     def UpdateLastDelivered(self, title, num):
