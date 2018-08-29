@@ -47,8 +47,14 @@ class KanManHuaBaseBook(BaseComicBook):
                 newNum = oldNum + deliverCount
                 if newNum < len(chapterList):
                     imgList = self.getImgList(chapterList[newNum])
+                    if len(imgList) == 0:
+                        self.log.warn('can not found image list: %s' % chapterList[newNum])
+                        break
+
                     for img in imgList:
                         urls.append((title, img, img, None))
+                        self.log.warn('comicSrc: %s' % img)
+
                     self.UpdateLastDelivered(title, newNum+1)
                     if newNum == 0:
                         break
@@ -75,15 +81,17 @@ class KanManHuaBaseBook(BaseComicBook):
             result = opener.open(url)
             content = result.content
             if not content:
+                self.log.warn('can not get image content %s' % url)
                 continue
 
             imgFilenameList = []
 
             #强制转换成JPEG
+            self.log.warn('convert to JPEG %s' % url)
             content = convert_image(content)
             #先判断是否是图片
             imgType = imghdr.what(None, content)
-            print imgType
+            self.log.warn('This image is %s' % imgType)
 
             if imgType:
                 content = self.process_image_comic(content)

@@ -8,8 +8,6 @@ from __future__ import absolute_import
 from builtins import range
 from builtins import int
 from builtins import chr
-from future import standard_library
-standard_library.install_aliases()
 from builtins import object
 import math
 import re
