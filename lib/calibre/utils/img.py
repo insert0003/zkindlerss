@@ -24,7 +24,19 @@ def identify_data(data):
     fmt = img.format
     return (width, height, fmt)
     
-    
+def convert_image(data):
+    'Convert WEBP images to JPEG as the idiotic Kindle cannot display some PNG'
+    if not isinstance(data, StringIO):
+        data = StringIO(data)
+    im = Image.open(data)
+    if(im.format != 'JPEG'):
+        fmt = 'JPEG'
+        data = StringIO()
+        im.save(data, fmt)
+
+    data = data.getvalue()
+    return data
+
 def rescale_image(data, maxsizeb=4000000, dimen=None, 
                 png2jpg=False, graying=True, reduceto=(600,800)):
     '''

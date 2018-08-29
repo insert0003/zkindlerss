@@ -120,6 +120,12 @@ def test_bmp(h, f):
 
 tests.append(test_bmp)
 
+def test_webp(h, f):
+    if h[:4] == b'RIFF' and h[8:12] == b'WEBP':
+        return 'webp'
+
+tests.append(test_webp)
+
 #--------------------#
 # Small test program #
 #--------------------#

@@ -7,9 +7,12 @@ from time import sleep
 from config import TIMEZONE
 from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
+from lib.lzstring import LZString
 from books.base import BaseComicBook
 from apps.dbModels import LastDelivered
 from bs4 import BeautifulSoup
+import urllib, urllib2, imghdr
+from calibre.utils.img import convert_image
 
 
 class KanManHuaBaseBook(BaseComicBook):
@@ -39,15 +42,6 @@ class KanManHuaBaseBook(BaseComicBook):
             else:
                 oldNum = lastCount.num
 
-            #https://www.manhuagui.com/comic/26692/
-            # urlpaths = urlparse.urlsplit(url.lower()).path.split("/")
-            # if ( (u"id" in urlpaths) and (urlpaths.index(u"id")+1 < len(urlpaths)) ):
-            #     comic_id = urlpaths[urlpaths.index(u"id")+1]
-
-            # if ( (not comic_id.isdigit()) or (comic_id=="") ):
-            #     self.log.warn('can not get comic id: %s' % url)
-            #     break
-
             chapterList = self.getChapterList(url)
             for deliverCount in range(5):
                 newNum = oldNum + deliverCount
@@ -60,6 +54,60 @@ class KanManHuaBaseBook(BaseComicBook):
                         break
 
         return urls
+
+    #生成器，返回一个图片元组，mime,url,filename,content,brief,thumbnail
+    def Items(self):
+        urls = self.ParseFeedUrls()
+        opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+        decoder = AutoDecoder(isfeed=False)
+        prevSection = ''
+        min_width, min_height = self.min_image_size if self.min_image_size else (0, 0)
+        htmlTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html;charset=utf-8"><title>%s</title></head><body><img src="%s"/></body></html>'
+
+        for section, fTitle, url, desc in urls:
+            if section != prevSection or prevSection == '':
+                    decoder.encoding = '' #每个小节都重新检测编码[当然是在抓取的是网页的情况下才需要]
+                    prevSection = section
+                    opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+                    if self.needs_subscription:
+                        result = self.login(opener, decoder)
+
+            result = opener.open(url)
+            content = result.content
+            if not content:
+                continue
+
+            imgFilenameList = []
+
+            #强制转换成JPEG
+            content = convert_image(content)
+            #先判断是否是图片
+            imgType = imghdr.what(None, content)
+            print imgType
+
+            if imgType:
+                content = self.process_image_comic(content)
+                if content:
+                    if isinstance(content, (list, tuple)): #一个图片分隔为多个图片
+                        imgIndex = self.imgindex
+                        for idx, imgPartContent in enumerate(content):
+                            imgType = imghdr.what(None, imgPartContent)
+                            imgMime = r"image/" + imgType
+                            fnImg = "img%d_%d.jpg" % (imgIndex, idx)
+                            imgPartUrl = url[:-4]+"_%d.jpg"%idx
+                            imgFilenameList.append(fnImg)
+                            yield (imgMime, imgPartUrl, fnImg, imgPartContent, None, True)
+                    else: #单个图片
+                        imgType = imghdr.what(None, content)
+                        imgMime = r"image/" + imgType
+                        fnImg = "img%d.%s" % (self.imgindex, 'jpg' if imgType=='jpeg' else imgType)
+                        imgFilenameList.append(fnImg)
+                        yield (imgMime, url, fnImg, content, None, None)
+
+            #每个图片当做一篇文章，否则全屏模式下图片会挤到同一页
+            for imgFilename in imgFilenameList:
+                tmpHtml = htmlTemplate % (fTitle, imgFilename)
+                yield (imgFilename.split('.')[0], url, fTitle, tmpHtml, '', None)
 
     #更新已经推送的卷序号到数据库
     def UpdateLastDelivered(self, title, num):
@@ -75,6 +123,21 @@ class KanManHuaBaseBook(BaseComicBook):
                 datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
         dbItem.put()
 
+    #获取图片信息
+    def get_node_online(self, input_str):
+        opts_str = 'console.log(%s)' % input_str.encode("utf-8")
+        url = "https://m.runoob.com/api/compile.php"
+        params = {"code":opts_str, "stdin":"", "language":"4", "fileext":"node.js"}
+        params = urllib.urlencode(params)
+
+        req = urllib2.Request(url)
+        req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+        req.add_data(params)
+
+        res = urllib2.urlopen(req)
+        result = json.loads(res.read())
+        return result["output"]
+
     #获取漫画章节列表
     def getChapterList(self, url):
         decoder = AutoDecoder(isfeed=False)
@@ -89,17 +152,11 @@ class KanManHuaBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'lxml')
-        section = soup.find("div", {"class": 'chapter-list cf mt10', "id": 'chapter-list-1'})
-        if (section is None):
-            self.log.warn('chapter-list is not exist.')
-            return chapterList
-
-        # <ul class="chapter-list normal">
-        # <ul class="chapter-list reverse">
-        for item in section.findAll("li"):
-            title = item.find("a").get("title")
+        anchors = soup.select('.chapter-list > ul > li > a')
+        for item in anchors:
+            title = item.get("title")
             index = int(re.sub("\D", "", title))
-            href = "https://www.manhuagui.com" + item.find("a").get("href")
+            href = "https://www.manhuagui.com" + item.get("href")
             chapterList.append({'index':index, 'title':title, 'href':href})
 
         chapterList = sorted(chapterList)
@@ -117,18 +174,27 @@ class KanManHuaBaseBook(BaseComicBook):
             self.log.warn('fetch comic page failed: %s' % url)
             return imgList
 
-        content = result.content
-        print content
-        return imgList
-        cid_page = self.AutoDecodeContent(content, decoder, self.page_encoding, opener.realurl, result.headers)
-        filter_result = re.findall(r"data\s*:\s*'(.+?)'", cid_page)
-        if len(filter_result) != 0:
-            base64data = filter_result[0][1:]
-            img_detail_json = json.loads(base64.decodestring(base64data))
-            for img_url in img_detail_json.get('picture', []):
-                if ( 'url' in img_url ):
-                    imgList.append(img_url['url'])
-                else:
-                    self.log.warn('no url in img_url:%s' % img_url)
+        content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
+        soup = BeautifulSoup(content, 'lxml')
+        scripts = soup.findAll("script", {"type": "text/javascript"})
+        for script in scripts:
+            if script.text != "":
+                raw_content = script.text
+                break
+
+        res = re.search(r'window\["\\x65\\x76\\x61\\x6c"\](.*\))', raw_content).group(1)
+        lz_encoded = re.search(r"'([A-Za-z0-9+/=]+)'\['\\x73\\x70\\x6c\\x69\\x63'\]\('\\x7c'\)", res).group(1)
+        lz_decoded = LZString().decompressFromBase64(lz_encoded)
+        res = re.sub(r"'([A-Za-z0-9+/=]+)'\['\\x73\\x70\\x6c\\x69\\x63'\]\('\\x7c'\)", "'%s'.split('|')"%(lz_decoded), res)
+        codes = self.get_node_online(res)
+        pages_opts = json.loads(re.search(r'^SMH.imgData\((.*)\)\.preInit\(\);$', codes).group(1))
+
+        cid = pages_opts["cid"]
+        md5 = pages_opts["sl"]["md5"]
+        path = pages_opts["path"]
+        files = pages_opts["files"]
+        for img in files:
+            img_url = 'https://i.hamreus.com{}{}?cid={}&md5={}'.format(path.encode("utf8"), img, cid, md5)
+            imgList.append(img_url)
 
         return imgList
