@@ -321,15 +321,19 @@ class ManHuaGuiBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'lxml')
-        anchors = soup.select('.chapter-list > ul > li > a')
-        for item in anchors:
-            title = item.get("title")
-            index = int(re.sub("\D", "", title))
-            href = "https://www.manhuagui.com" + item.get("href")
-            chapterList.append({'index':index, 'title':title, 'href':href})
+        divs = soup.findAll("div", {"class": 'chapter-list cf mt10', "id": 'chapter-list-1'})
 
-        chapterList = sorted(chapterList)
-    
+        for divCount in range(len(divs)):
+            prefix = len(divs) - 1 - divCount
+            div = divs[prefix]
+            for ul in div.findAll('ul'):
+                lias = ul.findAll('a')
+                for aindex in range(len(lias)):
+                    rindex = len(lias)-1-aindex
+                    title = lias[rindex].get("title")
+                    href = "https://www.manhuagui.com" + lias[rindex].get("href")
+                    chapterList.append({'title':title, 'href':href})
+
         return chapterList
 
     #获取漫画图片列表
