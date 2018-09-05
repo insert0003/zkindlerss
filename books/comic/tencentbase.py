@@ -63,20 +63,6 @@ class TencentBaseBook(BaseComicBook):
 
         return urls
 
-    #更新已经推送的卷序号到数据库
-    def UpdateLastDelivered(self, title, num):
-        userName = self.UserName()
-        dbItem = LastDelivered.all().filter('username = ', userName).filter('bookname = ', title).get()
-        self.last_delivered_volume = u' 第%d话' % num
-        if dbItem:
-            dbItem.trynum = num
-            dbItem.record = self.last_delivered_volume
-            dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
-        else:
-            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
-                datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
-        dbItem.put()
-
     #获取漫画章节列表
     def getChapterList(self, comic_id):
         decoder = AutoDecoder(isfeed=False)

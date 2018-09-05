@@ -13,6 +13,7 @@ from lib import feedparser
 from lib.readability import readability
 from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
+from apps.dbModels import LastDelivered
 
 from calibre.utils.img import rescale_image, mobify_image
 from PIL import Image
@@ -1496,6 +1497,20 @@ class BaseComicBook(BaseFeedBook):
             for imgFilename in imgFilenameList:
                 tmpHtml = htmlTemplate % (fTitle, imgFilename)
                 yield (imgFilename.split('.')[0], url, fTitle, tmpHtml, '', None)
+
+    #更新已经推送的卷序号到数据库
+    def UpdateLastDelivered(self, title, num):
+        userName = self.UserName()
+        dbItem = LastDelivered.all().filter('username = ', userName).filter('bookname = ', title).get()
+        self.last_delivered_volume = u' 第%d话' % num
+        if dbItem:
+            dbItem.trynum = num
+            dbItem.record = self.last_delivered_volume
+            dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
+        else:
+            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
+                datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
+        dbItem.put()
     
     #预处理漫画图片
     def process_image_comic(self, data):

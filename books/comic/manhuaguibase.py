@@ -1,21 +1,187 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-#http://ac.qq.com或者http://m.ac.qq.com网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
+#https://www.manhuagui.com或者https://m.manhuagui.com网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
 #Author: insert0003 <https://github.com/insert0003>
 import re, urlparse, json, datetime, base64
 from time import sleep
 from config import TIMEZONE
 from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
-from lib.lzstring import LZString
 from books.base import BaseComicBook
 from apps.dbModels import LastDelivered
 from bs4 import BeautifulSoup
 import urllib, urllib2, imghdr
-from calibre.utils.img import convert_image
+from google.appengine.api import images
+
+from __builtin__ import unichr as chr
+import math
+import re
+
+keyStrBase64 = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/="
+baseReverseDic = {};
+
+class Object(object):
+    def __init__(self, **kwargs):
+        for k, v in kwargs.items():
+            setattr(self, k, v)
 
 
-class KanManHuaBaseBook(BaseComicBook):
+def getBaseValue(alphabet, character):
+    if alphabet not in baseReverseDic:
+        baseReverseDic[alphabet] = {}
+    for i in range(len(alphabet)):
+        baseReverseDic[alphabet][alphabet[i]] = i
+    return baseReverseDic[alphabet][character]
+
+def _decompress(length, resetValue, getNextValue):
+    dictionary = {}
+    enlargeIn = 4
+    dictSize = 4
+    numBits = 3
+    entry = ""
+    result = []
+
+    data = Object(
+        val=getNextValue(0),
+        position=resetValue,
+        index=1
+    )
+
+    for i in range(3):
+        dictionary[i] = i
+
+    bits = 0
+    maxpower = math.pow(2, 2)
+    power = 1
+
+    while power != maxpower:
+        resb = data.val & data.position
+        data.position >>= 1
+        if data.position == 0:
+            data.position = resetValue
+            data.val = getNextValue(data.index)
+            data.index += 1
+
+        bits |= power if resb > 0 else 0
+        power <<= 1;
+
+    next = bits
+    if next == 0:
+        bits = 0
+        maxpower = math.pow(2, 8)
+        power = 1
+        while power != maxpower:
+            resb = data.val & data.position
+            data.position >>= 1
+            if data.position == 0:
+                data.position = resetValue
+                data.val = getNextValue(data.index)
+                data.index += 1
+            bits |= power if resb > 0 else 0
+            power <<= 1
+        c = chr(bits)
+    elif next == 1:
+        bits = 0
+        maxpower = math.pow(2, 16)
+        power = 1
+        while power != maxpower:
+            resb = data.val & data.position
+            data.position >>= 1
+            if data.position == 0:
+                data.position = resetValue;
+                data.val = getNextValue(data.index)
+                data.index += 1
+            bits |= power if resb > 0 else 0
+            power <<= 1
+        c = chr(bits)
+    elif next == 2:
+        return ""
+
+    dictionary[3] = c
+    w = c
+    result.append(c)
+    counter = 0
+    while True:
+        counter += 1
+        if data.index > length:
+            return ""
+
+        bits = 0
+        maxpower = math.pow(2, numBits)
+        power = 1
+        while power != maxpower:
+            resb = data.val & data.position
+            data.position >>= 1
+            if data.position == 0:
+                data.position = resetValue;
+                data.val = getNextValue(data.index)
+                data.index += 1
+            bits |= power if resb > 0 else 0
+            power <<= 1
+
+        c = bits
+        if c == 0:
+            bits = 0
+            maxpower = math.pow(2, 8)
+            power = 1
+            while power != maxpower:
+                resb = data.val & data.position
+                data.position >>= 1
+                if data.position == 0:
+                    data.position = resetValue
+                    data.val = getNextValue(data.index)
+                    data.index += 1
+                bits |= power if resb > 0 else 0
+                power <<= 1
+
+            dictionary[dictSize] = chr(bits)
+            dictSize += 1
+            c = dictSize - 1
+            enlargeIn -= 1
+        elif c == 1:
+            bits = 0
+            maxpower = math.pow(2, 16)
+            power = 1
+            while power != maxpower:
+                resb = data.val & data.position
+                data.position >>= 1
+                if data.position == 0:
+                    data.position = resetValue;
+                    data.val = getNextValue(data.index)
+                    data.index += 1
+                bits |= power if resb > 0 else 0
+                power <<= 1
+            dictionary[dictSize] = chr(bits)
+            dictSize += 1
+            c = dictSize - 1
+            enlargeIn -= 1
+        elif c == 2:
+            return "".join(result)
+
+        if enlargeIn == 0:
+            enlargeIn = math.pow(2, numBits)
+            numBits += 1
+
+        if c in dictionary:
+            entry = dictionary[c]
+        else:
+            if c == dictSize:
+                entry = w + w[0]
+            else:
+                return None
+        result.append(entry)
+
+        # Add w+entry[0] to the dictionary.
+        dictionary[dictSize] = w + entry[0]
+        dictSize += 1
+        enlargeIn -= 1
+
+        w = entry
+        if enlargeIn == 0:
+            enlargeIn = math.pow(2, numBits)
+            numBits += 1
+
+class ManHuaGuiBaseBook(BaseComicBook):
     title               = u''
     description         = u''
     language            = ''
@@ -42,8 +208,11 @@ class KanManHuaBaseBook(BaseComicBook):
             else:
                 oldNum = lastCount.num
 
+            if url.startswith( "https://m.manhuagui.com" ):
+                url = url.replace('https://m.manhuagui.com', 'https://www.manhuagui.com')
+
             chapterList = self.getChapterList(url)
-            for deliverCount in range(5):
+            for deliverCount in range(1):
                 newNum = oldNum + deliverCount
                 if newNum < len(chapterList):
                     imgList = self.getImgList(chapterList[newNum])
@@ -51,8 +220,11 @@ class KanManHuaBaseBook(BaseComicBook):
                         self.log.warn('can not found image list: %s' % chapterList[newNum])
                         break
 
+                    pageCount=0
                     for img in imgList:
-                        urls.append((title, img, img, None))
+                        pageCount=pageCount+1
+                        fTitle='{}/{}'.format(pageCount, len(imgList))
+                        urls.append((title, fTitle, img, None))
                         self.log.warn('comicSrc: %s' % img)
 
                     self.UpdateLastDelivered(title, newNum+1)
@@ -88,7 +260,10 @@ class KanManHuaBaseBook(BaseComicBook):
 
             #强制转换成JPEG
             self.log.warn('convert to JPEG %s' % url)
-            content = convert_image(content)
+            # content = convert_image(content)
+            img = images.Image(content)
+            img.resize(width=(img.width-1), height=(img.height-1))
+            content = img.execute_transforms(output_encoding=images.JPEG)
             #先判断是否是图片
             imgType = imghdr.what(None, content)
             self.log.warn('This image is %s' % imgType)
@@ -116,20 +291,6 @@ class KanManHuaBaseBook(BaseComicBook):
             for imgFilename in imgFilenameList:
                 tmpHtml = htmlTemplate % (fTitle, imgFilename)
                 yield (imgFilename.split('.')[0], url, fTitle, tmpHtml, '', None)
-
-    #更新已经推送的卷序号到数据库
-    def UpdateLastDelivered(self, title, num):
-        userName = self.UserName()
-        dbItem = LastDelivered.all().filter('username = ', userName).filter('bookname = ', title).get()
-        self.last_delivered_volume = u' 第%d话' % num
-        if dbItem:
-            dbItem.trynum = num
-            dbItem.record = self.last_delivered_volume
-            dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
-        else:
-            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
-                datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
-        dbItem.put()
 
     #获取图片信息
     def get_node_online(self, input_str):
@@ -192,7 +353,7 @@ class KanManHuaBaseBook(BaseComicBook):
 
         res = re.search(r'window\["\\x65\\x76\\x61\\x6c"\](.*\))', raw_content).group(1)
         lz_encoded = re.search(r"'([A-Za-z0-9+/=]+)'\['\\x73\\x70\\x6c\\x69\\x63'\]\('\\x7c'\)", res).group(1)
-        lz_decoded = LZString().decompressFromBase64(lz_encoded)
+        lz_decoded = self.decompressFromBase64(lz_encoded)
         res = re.sub(r"'([A-Za-z0-9+/=]+)'\['\\x73\\x70\\x6c\\x69\\x63'\]\('\\x7c'\)", "'%s'.split('|')"%(lz_decoded), res)
         codes = self.get_node_online(res)
         pages_opts = json.loads(re.search(r'^SMH.imgData\((.*)\)\.preInit\(\);$', codes).group(1))
@@ -206,3 +367,10 @@ class KanManHuaBaseBook(BaseComicBook):
             imgList.append(img_url)
 
         return imgList
+
+    def decompressFromBase64(self, compressed):
+        if compressed is None:
+            return ""
+        if compressed == "":
+            return None
+        return _decompress(len(compressed), 32, lambda index: getBaseValue(keyStrBase64, compressed[index]))
