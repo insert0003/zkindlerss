@@ -212,7 +212,7 @@ class ManHuaGuiBaseBook(BaseComicBook):
                 url = url.replace('https://m.manhuagui.com', 'https://www.manhuagui.com')
 
             chapterList = self.getChapterList(url)
-            for deliverCount in range(1):
+            for deliverCount in range(5):
                 newNum = oldNum + deliverCount
                 if newNum < len(chapterList):
                     imgList = self.getImgList(chapterList[newNum])
