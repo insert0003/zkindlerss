@@ -212,41 +212,20 @@ class ManHuaGuiBaseBook(BaseComicBook):
                 url = url.replace('https://m.manhuagui.com', 'https://www.manhuagui.com')
 
             chapterList = self.getChapterList(url)
-            for deliverCount in range(1):
-                newNum = oldNum + deliverCount
-                if newNum < len(chapterList):
-                    imgList = self.getImgList(chapterList[newNum])
-                    if len(imgList) == 0:
-                        self.log.warn('can not found image list: %s' % chapterList[newNum])
-                        break
+            if oldNum < len(chapterList):
+                imgList = self.getImgList(chapterList[oldNum])
+                if len(imgList) == 0:
+                    self.log.warn('can not found image list: %s' % chapterList[oldNum])
+                    break
 
-                    pageCount=0
-                    for img in imgList:
-                        pageCount=pageCount+1
-                        fTitle='{}/{}'.format(pageCount, len(imgList))
-                        urls.append((title, fTitle, img, None))
-                        self.log.warn('comicSrc: %s' % img)
+                pageCount=0
+                for img in imgList:
+                    pageCount=pageCount+1
+                    fTitle='{}/{}'.format(pageCount, len(imgList))
+                    urls.append((title, fTitle, img, None))
+                    self.log.warn('comicSrc: %s' % img)
 
-                    self.UpdateLastDelivered(title, newNum+1)
-                    if newNum == 0:
-                        break
-                elif len(chapterList) == 1:
-                    chapterTitle = chapterList[0]["title"]
-                    index = int(re.sub("\D", "", chapterTitle))
-                    if oldNum != index:
-                        imgList = self.getImgList(chapterList[0])
-                        if len(imgList) == 0:
-                            self.log.warn('can not found image list: %s' % chapterList[newNum])
-                            break
-
-                        pageCount=0
-                        for img in imgList:
-                            pageCount=pageCount+1
-                            fTitle='{}/{}'.format(pageCount, len(imgList))
-                            urls.append((title, fTitle, img, None))
-                            self.log.warn('comicSrc: %s' % img)
-
-                        self.UpdateLastDelivered(title, index)
+                self.UpdateLastDelivered(title, oldNum+1)
 
         return urls
 
@@ -256,7 +235,6 @@ class ManHuaGuiBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
         decoder = AutoDecoder(isfeed=False)
         prevSection = ''
-        min_width, min_height = self.min_image_size if self.min_image_size else (0, 0)
         htmlTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html;charset=utf-8"><title>%s</title></head><body><img src="%s"/></body></html>'
 
         for section, fTitle, url, desc in urls:
@@ -340,29 +318,9 @@ class ManHuaGuiBaseBook(BaseComicBook):
         soup = BeautifulSoup(content, 'lxml')
         invisible_input = soup.find("input", {"id":'__VIEWSTATE'})
         if invisible_input:
-            newa = soup.find("a", {"class": 'blue'})
-            href = "https://www.manhuagui.com" + newa.get("href")
-            title = newa.text
-            # chapterList.append({'title':title, 'href':href})
-            chapterList.append({'title':"case3-VII", 'href':"https://www.manhuagui.com/comic/1499/114242.html"})
-            chapterList.append({'title':"第01卷", 'href':"https://www.manhuagui.com/comic/1499/13291.html"})
-            chapterList.append({'title':"第02卷", 'href':"https://www.manhuagui.com/comic/1499/13292.html"})
-            chapterList.append({'title':"第03卷", 'href':"https://www.manhuagui.com/comic/1499/113912.html"})
-            chapterList.append({'title':"第04卷", 'href':"https://www.manhuagui.com/comic/1499/115270.html"})
-            chapterList.append({'title':"第05卷", 'href':"https://www.manhuagui.com/comic/1499/117648.html"})
-            chapterList.append({'title':"第06卷", 'href':"https://www.manhuagui.com/comic/1499/122892.html"})
-            chapterList.append({'title':"第07卷", 'href':"https://www.manhuagui.com/comic/1499/215032.html"})
-            chapterList.append({'title':"第08卷", 'href':"https://www.manhuagui.com/comic/1499/218707.html"})
-            chapterList.append({'title':"第09卷", 'href':"https://www.manhuagui.com/comic/1499/306229.html"})
-            chapterList.append({'title':"第10卷", 'href':"https://www.manhuagui.com/comic/1499/330472.html"})
-            chapterList.append({'title':"第11卷", 'href':"https://www.manhuagui.com/comic/1499/330478.html"})
-            chapterList.append({'title':"第12卷", 'href':"https://www.manhuagui.com/comic/1499/330483.html"})
-            chapterList.append({'title':"第13卷01", 'href':"https://www.manhuagui.com/comic/1499/330489.html"})
-            chapterList.append({'title':"第13卷02-03", 'href':"https://www.manhuagui.com/comic/1499/330490.html"})
-            chapterList.append({'title':"第13卷04", 'href':"https://www.manhuagui.com/comic/1499/330491.html"})
-            chapterList.append({'title':"第13卷05", 'href':"https://www.manhuagui.com/comic/1499/330492.html"})
-            chapterList.append({'title':"第13卷06", 'href':"https://www.manhuagui.com/comic/1499/330493.html"})
-            return chapterList
+            lz_encoded=invisible_input.get("value")
+            lz_decoded = self.decompressFromBase64(lz_encoded)
+            soup = BeautifulSoup(lz_decoded, 'lxml')
 
         divs = soup.findAll("div", {"class": 'chapter-list cf mt10'})
 

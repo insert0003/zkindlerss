@@ -84,13 +84,9 @@
         <td class="center">{{ log.username }}</td>
         <td class="center">{{ log.datetime.strftime('%Y-%m-%d %H:%M') }}</td>
         <td class="center">{{ log.bookname }}</td>
-        <td class="center" id="lastDelivered_num_{{log.key().id()}}">{%if log.num %} {{ log.num }} {% else %} - {% endif %}</td>
-        <td class="center" id="lastDelivered_rec_{{log.key().id()}}">{%if log.record %} {{ log.record }} {% else %} - {% endif %}</td>
-        {% if log.num -%}
+        <td class="center" id="lastDelivered_num_{{log.key().id()}}">{{ log.num }}</td>
+        <td class="center" id="lastDelivered_rec_{{log.key().id()}}">{{ log.record }}</td>
         <th class="center"><a href="#" onclick="ChangeLastDelivered({{log.key().id()}});return false;">{{_("Change")}}</a></th>
-        {% else -%}
-        <th>-</th>
-        {% endif -%}
         <th class="center"><a href="#" onclick="DeleteLastDelivered({{log.key().id()}});return false;">{{_("Delete")}}</a></th>
     </tr>
     {% endfor -%}
