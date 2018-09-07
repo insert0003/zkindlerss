@@ -212,20 +212,23 @@ class ManHuaGuiBaseBook(BaseComicBook):
                 url = url.replace('https://m.manhuagui.com', 'https://www.manhuagui.com')
 
             chapterList = self.getChapterList(url)
-            if oldNum < len(chapterList):
-                imgList = self.getImgList(chapterList[oldNum])
-                if len(imgList) == 0:
-                    self.log.warn('can not found image list: %s' % chapterList[oldNum])
-                    break
+            pageCount=0
+            for deliverCount in range(10):
+                newNum = oldNum + deliverCount
+                if newNum < len(chapterList):
+                    imgList = self.getImgList(chapterList[newNum])
+                    if len(imgList) == 0:
+                        self.log.warn('can not found image list: %s' % chapterList[newNum])
+                        break
 
-                pageCount=0
-                for img in imgList:
-                    pageCount=pageCount+1
-                    fTitle='{}/{}'.format(pageCount, len(imgList))
-                    urls.append((title, fTitle, img, None))
-                    self.log.warn('comicSrc: %s' % img)
+                    for img in imgList:
+                        pageCount=pageCount+1
+                        urls.append((title, '{}'.format(pageCount), img, None))
+                        self.log.warn('comicSrc: %s' % img)
 
-                self.UpdateLastDelivered(title, oldNum+1)
+                    self.UpdateLastDelivered(title, newNum+1)
+                    if pageCount > 80:
+                        break
 
         return urls
 
@@ -235,6 +238,7 @@ class ManHuaGuiBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
         decoder = AutoDecoder(isfeed=False)
         prevSection = ''
+        min_width, min_height = self.min_image_size if self.min_image_size else (0, 0)
         htmlTemplate = '<html><head><meta http-equiv="Content-Type" content="text/html;charset=utf-8"><title>%s</title></head><body><img src="%s"/></body></html>'
 
         for section, fTitle, url, desc in urls:
