@@ -1370,7 +1370,51 @@ class BaseComicBook(BaseFeedBook):
     #子类必须实现此函数，返回 [(section, title, url, desc),..]
     #每个URL直接为图片地址，或包含一个或几个漫画图片的网页地址
     def ParseFeedUrls(self):
+        urls = [] #用于返回
+        
+        userName = self.UserName()
+        for item in self.feeds:
+            title, url = item[0], item[1]
+            
+            lastCount = LastDelivered.all().filter('username = ', userName).filter("bookname = ", title).get()
+            if not lastCount:
+                self.log.info('These is no log in db LastDelivered for name: %s, set to 0' % title)
+                oldNum = 0
+            else:
+                oldNum = lastCount.num
+
+            chapterList = self.getChapterList(url)
+
+            pageCount=0
+            for deliverCount in range(10):
+                newNum = oldNum + deliverCount
+                if newNum < len(chapterList):
+                    imgList = self.getImgList(chapterList[newNum])
+                    if len(imgList) == 0:
+                        self.log.warn('can not found image list: %s' % chapterList[newNum])
+                        break
+                    for img in imgList:
+                        pageCount=pageCount+1
+                        urls.append((title, '{}'.format(pageCount), img, None))
+                        self.log.info('comicSrc: %s' % img)
+
+                    self.UpdateLastDelivered(title, newNum+1)
+                    if pageCount > 80:
+                        break
+
+        return urls
+
+    #获取漫画章节列表
+    def getChapterList(self, url):
         return []
+
+    #获取漫画图片列表
+    def getImgList(self, url):
+        return []
+    
+    #获取漫画图片内容
+    def adjustImgContent(self, content):
+        return content 
     
     #生成器，返回一个图片元组，mime,url,filename,content,brief,thumbnail
     def Items(self):
@@ -1383,17 +1427,18 @@ class BaseComicBook(BaseFeedBook):
         
         for section, fTitle, url, desc in urls:
             if section != prevSection or prevSection == '':
-                    decoder.encoding = '' #每个小节都重新检测编码[当然是在抓取的是网页的情况下才需要]
-                    prevSection = section
-                    opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
-                    if self.needs_subscription:
-                        result = self.login(opener, decoder)
-                        
+                decoder.encoding = '' #每个小节都重新检测编码[当然是在抓取的是网页的情况下才需要]
+                prevSection = section
+                opener = URLOpener(self.host, timeout=self.timeout, headers=self.extra_header)
+                if self.needs_subscription:
+                    result = self.login(opener, decoder)
+
             result = opener.open(url)
-            content = result.content 
+            content = result.content
             if not content:
                 continue
-            
+
+            content = self.adjustImgContent(content);
             imgFilenameList = []
             
             #先判断是否是图片
@@ -1511,7 +1556,7 @@ class BaseComicBook(BaseFeedBook):
             dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
                 datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
         dbItem.put()
-    
+
     #预处理漫画图片
     def process_image_comic(self, data):
         if not data:
@@ -1628,4 +1673,3 @@ def debug_save_ftp(content, name='page.html', root='', server='127.0.0.1', port=
     ftp.storbinary('STOR %s' % name, StringIO(content))
     ftp.set_debuglevel(0)
     ftp.quit()
-    
