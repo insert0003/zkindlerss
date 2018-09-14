@@ -33,9 +33,8 @@ class CartoonMadBaseBook(BaseComicBook):
             return chapterList
 
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
-            
-        soup = BeautifulSoup(content, 'lxml')
-            
+
+        soup = BeautifulSoup(content, 'html.parser')
         allComicTable = soup.find_all('table', {'width': '800', 'align': 'center'})
         for comicTable in allComicTable:
             comicVolumes = comicTable.find_all('a', {'target': '_blank'})
@@ -57,14 +56,14 @@ class CartoonMadBaseBook(BaseComicBook):
             return imgList
 
         content = self.AutoDecodeContent(result.content, decoder, self.page_encoding, opener.realurl, result.headers)
-        soup = BeautifulSoup(content, 'lxml')
+        soup = BeautifulSoup(content, 'html.parser')
         sel = soup.find('select') #页码行，要提取所有的页面
         ulist = sel.find_all('option') if sel else None
         if not ulist:
             return imgList
 
         for ul in ulist:
-            if ul.get('value') == None:           
+            if ul.get('value') == None:
                 ulist.remove(ul)
 
         listLen = len(ulist)
@@ -99,15 +98,15 @@ class CartoonMadBaseBook(BaseComicBook):
             return None
 
         content = self.AutoDecodeContent(result.content, decoder, self.page_encoding, opener.realurl, result.headers)
-        soup = BeautifulSoup(content, 'lxml')
+        soup = BeautifulSoup(content, 'html.parser')
         comicImgTag = soup.find('img', {'oncontextmenu': 'return false'})
         return comicImgTag.get('src') if comicImgTag else None
-    
+
     #获取漫画图片格式
     def getImgStr(self, url):
         urls = url.split("/")
         tail = urls[len(urls)-1]
-        imgIndex = tail.split(".")[0] 
+        imgIndex = tail.split(".")[0]
         imgType = tail.split(".")[1]
         base = url.replace(tail, "")
         return base, len(imgIndex), imgType

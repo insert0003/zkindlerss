@@ -1371,11 +1371,11 @@ class BaseComicBook(BaseFeedBook):
     #每个URL直接为图片地址，或包含一个或几个漫画图片的网页地址
     def ParseFeedUrls(self):
         urls = [] #用于返回
-        
+
         userName = self.UserName()
         for item in self.feeds:
             title, url = item[0], item[1]
-            
+
             lastCount = LastDelivered.all().filter('username = ', userName).filter("bookname = ", title).get()
             if not lastCount:
                 self.log.info('These is no log in db LastDelivered for name: %s, set to 0' % title)
