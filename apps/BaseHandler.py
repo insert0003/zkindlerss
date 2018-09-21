@@ -86,7 +86,7 @@ class BaseHandler:
             titles = book.split(" ")
             if len(titles) != 1:
                 dbItem = LastDelivered.all().filter('username = ', name).filter('bookname = ', titles[0]).get()
-                if status == 'ok':
+                if status == 'ok' or status == 'sendgrid ok':
                     dbItem.num = dbItem.trynum
                 elif not status.startswith("sendgrid"):
                     dbItem.record = u' 第%d话' % dbItem.num
@@ -206,7 +206,10 @@ class BaseHandler:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='send failed')
                     break
             else:
-                self.deliverlog(name, str(to), title, len(attachment), tz=tz)
+                if i < SENDMAIL_RETRY_CNT and sgenable and sgapikey:
+                    self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='sendgrid ok')
+                else:
+                    self.deliverlog(name, str(to), title, len(attachment), tz=tz)
                 break
     
     #TO可以是一个单独的字符串，或一个字符串列表，对应发送到多个地址
