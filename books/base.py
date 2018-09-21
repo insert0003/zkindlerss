@@ -1399,7 +1399,7 @@ class BaseComicBook(BaseFeedBook):
                         self.log.info('comicSrc: %s' % img)
 
                     self.UpdateLastDelivered(title, newNum+1)
-                    if pageCount > 50:
+                    if pageCount > 30:
                         break
 
         return urls

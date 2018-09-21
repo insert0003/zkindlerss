@@ -143,7 +143,7 @@
     <fieldset id="sg_fieldset">
         <legend>{{_("Sendgrid Mail Setting")}}</legend>
         <p>
-            <label><input type="checkbox" name="sgenable"  {% if user and user.sgenable %}checked="1"{% endif %} 
+            <label><input type="checkbox" name="sgenable"  {% if user and user.sgenable %}checked="1"{% endif %}
             onclick="setEditEnable(this.name, 'sgapikey')" /><span onclick="setEditEnable('sgenable', 'sgapikey');">{{_("Use Sendgrid")}}</span></label>
         </p>
         <table border="0">

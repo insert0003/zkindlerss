@@ -189,7 +189,7 @@ class BaseHandler:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='invalid postfix')
                     break
             except DeadlineExceededError as e:
-                if i < SENDMAIL_RETRY_CNT:
+                if i < SENDMAIL_RETRY_CNT and sgenable and sgapikey:
                     default_log.warn('timeout when sendmail to %s:%s, retry!' % (to, str(e)))
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='sendgrid timeout')
                     time.sleep(5)
