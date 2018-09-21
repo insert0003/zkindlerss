@@ -198,8 +198,8 @@ class BaseHandler:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='timeout')
                     break
             except Exception as e:
-                if i < SENDMAIL_RETRY_CNT:
-                    default_log.warn('sendmail to %s failed:%s. Try google api.' % (to, str(e)))
+                if i < SENDMAIL_RETRY_CNT and sgenable and sgapikey:
+                    default_log.warn('sendgrid sendmail to %s failed:%s. Try google api.' % (to, str(e)))
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='sendgrid failed')
                 else:
                     default_log.warn('sendmail to %s failed:%s. ' % (to, str(e)))
