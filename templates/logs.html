@@ -76,6 +76,7 @@
         <th class="center">{{_("Title")}}</th>
         <th class="center">{{_("Num")}}</th>
         <th class="center">{{_("Record")}}</th>
+        <th class="center">{{_("Offset")}}</th>
         <th class="center" colspan="2">{{_("Operation")}}</th>
     </tr></thead>
     <tbody>
@@ -86,6 +87,7 @@
         <td class="center">{{ log.bookname }}</td>
         <td class="center" id="lastDelivered_num_{{log.key().id()}}">{{ log.num }}</td>
         <td class="center" id="lastDelivered_rec_{{log.key().id()}}">{{ log.record }}</td>
+        <td class="center" id="lastDelivered_off_{{log.key().id()}}">{{ log.offset }}</td>
         <th class="center"><a href="#" onclick="ChangeLastDelivered({{log.key().id()}});return false;">{{_("Change")}}</a></th>
         <th class="center"><a href="#" onclick="DeleteLastDelivered({{log.key().id()}});return false;">{{_("Delete")}}</a></th>
     </tr>
@@ -164,6 +166,7 @@
 function ChangeLastDelivered(id_) {
     var numObj = $('lastDelivered_num_' + id_);
     var recObj = $('lastDelivered_rec_' + id_);
+    var offObj = $('lastDelivered_off_' + id_)
     var sStr = prompt("{{_('Please input a new number')}}", numObj.textContent);
     if (sStr != null && sStr != "") {
         if (isNaN(parseInt(sStr))) {
@@ -175,6 +178,7 @@ function ChangeLastDelivered(id_) {
                 if (resp.status == "ok") {
                     numObj.innerHTML = resp.num;
                     recObj.innerHTML = '-';
+                    offObj.innerHTML = '0'
                 } else {
                     alert("{{_('Unhappily : cannot change this record, Error:')}}" + resp.status);
                 }

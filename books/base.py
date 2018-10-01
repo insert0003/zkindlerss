@@ -1380,27 +1380,48 @@ class BaseComicBook(BaseFeedBook):
             if not lastCount:
                 self.log.info('These is no log in db LastDelivered for name: %s, set to 0' % title)
                 oldNum = 0
+                offset = 0
             else:
-                oldNum = lastCount.num
+                offset = lastCount.offset
+                if offset == 0:
+                    oldNum = lastCount.num
+                else:
+                    oldNum = lastCount.num - 1
 
             chapterList = self.getChapterList(url)
 
             pageCount=0
+            startpage=offset+1
             for deliverCount in range(5):
                 newNum = oldNum + deliverCount
                 if newNum < len(chapterList):
                     imgList = self.getImgList(chapterList[newNum])
-                    if len(imgList) == 0:
+                    imgLen = len(imgList)
+                    if imgLen == 0:
                         self.log.warn('can not found image list: %s' % chapterList[newNum])
                         break
-                    for img in imgList:
-                        pageCount=pageCount+1
-                        urls.append((title, '{}'.format(pageCount), img, None))
-                        self.log.info('comicSrc: %s' % img)
-
-                    self.UpdateLastDelivered(title, newNum+1)
-                    if pageCount > 30:
+                    elif pageCount > 30:
+                        self.log.warn('comic pages count is over 30.')
                         break
+
+                    for index in range(offset, imgLen):
+                        urls.append((title, '{}'.format(pageCount), imgList[index], None))
+                        pageCount=pageCount+1
+                        offset=index
+                        self.log.info('comicSrc: %s' % imgList[index])
+
+                        if pageCount==60:
+                            break
+
+                    if oldNum == newNum:
+                        self.last_delivered_volume = u' 第%d话'%(oldNum+1)
+                    else:
+                        self.last_delivered_volume = u' 第%d话P%d'%(oldNum+1, startpage) + u'~第%d话P%d'%(newNum+1, offset+1)
+
+                    if offset+1==imgLen:
+                        offset=0
+
+                    self.UpdateLastDelivered(title, newNum+1, offset)
 
         return urls
 
@@ -1544,16 +1565,16 @@ class BaseComicBook(BaseFeedBook):
                 yield (imgFilename.split('.')[0], url, fTitle, tmpHtml, '', None)
 
     #更新已经推送的卷序号到数据库
-    def UpdateLastDelivered(self, title, num):
+    def UpdateLastDelivered(self, title, num, offset=0):
         userName = self.UserName()
         dbItem = LastDelivered.all().filter('username = ', userName).filter('bookname = ', title).get()
-        self.last_delivered_volume = u' 第%d话' % num
         if dbItem:
             dbItem.trynum = num
+            dbItem.tryoffset = offset
             dbItem.record = self.last_delivered_volume
             dbItem.datetime = datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE)
         else:
-            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, record=self.last_delivered_volume,
+            dbItem = LastDelivered(username=userName, bookname=title, num=0, trynum=num, offset=0, tryoffset=offset, record=self.last_delivered_volume,
                 datetime=datetime.datetime.utcnow() + datetime.timedelta(hours=TIMEZONE))
         dbItem.put()
 

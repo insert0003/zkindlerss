@@ -114,6 +114,7 @@ class LastDeliveredAjax(BaseHandler):
             dbItem = LastDelivered.get_by_id(id_)
             if dbItem:
                 dbItem.num = num
+                dbItem.offset = 0
                 dbItem.record = '' #手工修改了期号则清空文字描述
                 dbItem.put()
                 return json.dumps({'status': 'ok', 'num': num})

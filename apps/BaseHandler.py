@@ -18,7 +18,6 @@ from apps.dbModels import *
 from google.appengine.api import mail
 import sendgrid
 from sendgrid.helpers.mail import Email, Content, Mail, Attachment
-import urllib
 from google.appengine.api.mail_errors import (InvalidSenderError,
                                            InvalidAttachmentTypeError)
 from google.appengine.runtime.apiproxy_errors import (OverQuotaError,
@@ -88,6 +87,7 @@ class BaseHandler:
                 dbItem = LastDelivered.all().filter('username = ', name).filter('bookname = ', titles[0]).get()
                 if status == 'ok' or status == 'sendgrid ok':
                     dbItem.num = dbItem.trynum
+                    dbItem.offset = dbItem.tryoffset
                 elif not status.startswith("sendgrid"):
                     dbItem.record = u' 第%d话' % dbItem.num
                 dbItem.put()
@@ -117,28 +117,8 @@ class BaseHandler:
         response = sg.client.mail.send.post(request_body=mail.get())
         if response.status_code == 202:
             default_log.warn('Sendgrid succeed send mail : %s', file_name)
-        elif response.status_code == 250:
-            default_log.warn('Queued mail for delivery: %s', str(response.status_code))
-        elif response.status_code == 421:
-            default_log.warn('Message from (X.X.X.X) temporarily deferred: %s', str(response.status_code))
-        elif response.status_code == 450:
-            default_log.warn('too frequent connects from 198.37.147.135, please try again later: %s', str(response.status_code))
-        elif response.status_code == 451:
-            default_log.warn('Temporary local problem - please try later: %s', str(response.status_code))
-        elif response.status_code == 452:
-            default_log.warn('Too many recipients received this hour (throttled): %s', str(response.status_code))
-        elif response.status_code == 550:
-            default_log.warn('Requested action not taken: mailbox unavailable: %s', str(response.status_code))
-        elif response.status_code == 551:
-            default_log.warn('User does not exist: %s', str(response.status_code))
-        elif response.status_code == 552:
-            default_log.warn('This message is larger than the current system limit or the recipient’s mailbox is full. Create a shorter message body or remove attachments and try sending it again: %s', str(response.status_code))
-        elif response.status_code == 553:
-            default_log.warn('Invalid/inactive user: %s', str(response.status_code))
-        elif response.status_code == 554:
-            default_log.warn('ERROR: Mail refused: %s', str(response.status_code))
         else:
-            default_log.warn('Delayed Bounce - Unable to Parse Server Reason: %s', str(response.status_code))
+            default_log.warn('Sendgrid send mail failed, error code: %s', str(response.status_code))
         return response.status_code
 
     #TO可以是一个单独的字符串，或一个字符串列表，对应发送到多个地址
@@ -159,7 +139,7 @@ class BaseHandler:
                 filename = "%s.%s"%(basename,booktype)
         else:
             filename = basename
-            
+
         sgenable, sgapikey = self.getsgapikey(name)
         for i in range(SENDMAIL_RETRY_CNT+1):
             try:
