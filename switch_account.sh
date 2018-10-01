@@ -15,14 +15,14 @@ if [ "$mail" = "" ]; then
     echo "Please input your mail address."
     echo "usag: ./switch_account.sh -m mailAddr -n appName"
     exit 1
+elif ! [[ $mail =~ "@" ]]; then
+    echo "Please input your correct mail address."
+    echo "usag: ./switch_account.sh -m mailAddr -n appName"
+    exit 1
 elif [ "$name" = "" ]; then
     echo "Please input your application name."
     echo "usag: ./switch_account.sh -m mailAddr -n appName"
     exit 1
-fi
-
-if ! [[ $mail =~ "@" ]]; then
-    mail=$mail"@gmail.com"
 fi
 
 echo "MailAddress: ": $mail
