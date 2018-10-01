@@ -1,4 +1,4 @@
-application: zkindlerss
+application: kindleear
 module: worker
 version: 5-5-2
 runtime: python27
