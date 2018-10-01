@@ -7,8 +7,7 @@ while [ $# -ge 2 ] ; do
         case "$1" in
                 -m) mail=$2; shift 2;;
                 -n) name=$2; shift 2;;
-                *) echo "unknown parameter $1." ; 
-                echo "usag: ./switch_account.sh -m mailAddr -n appName" ; exit 1 ; break;;
+                *) echo "unknown parameter $1." ; echo "usag: ./switch_account.sh -m mailAddr -n appName" ; exit 1 ; break;;
         esac
 done
 
