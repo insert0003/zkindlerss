@@ -1413,7 +1413,7 @@ class BaseComicBook(BaseFeedBook):
                         if pageCount==60:
                             break
 
-                    if oldNum == newNum:
+                    if (oldNum == newNum) and (offset+1==imgLen):
                         self.last_delivered_volume = u' 第%d话'%(oldNum+1)
                     else:
                         self.last_delivered_volume = u' 第%d话P%d'%(oldNum+1, startpage) + u'~第%d话P%d'%(newNum+1, offset+1)
