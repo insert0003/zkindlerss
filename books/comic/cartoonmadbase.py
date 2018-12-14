@@ -17,7 +17,7 @@ class CartoonMadBaseBook(BaseComicBook):
     coverfile           = ''
     host                = 'https://www.cartoonmad.com'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
-    
+
     #获取漫画章节列表
     def getChapterList(self, url):
         decoder = AutoDecoder(isfeed=False)
@@ -26,7 +26,7 @@ class CartoonMadBaseBook(BaseComicBook):
 
         if url.startswith( "http://" ):
             url = url.replace('http://', 'https://')
-            
+
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
             self.log.warn('fetch comic page failed: %s' % url)
@@ -73,9 +73,11 @@ class CartoonMadBaseBook(BaseComicBook):
         if firstPage != None:
             base, length, type = self.getImgStr(firstPage)
             for index in range(len(ulist)):
-                imgUrl = "{}{}.{}".format(base, str(index+1).zfill(length), type)
+                imgUrl = "https://www.cartoonmad.com/{}{}.{}".format(base, str(index+1).zfill(length), type)
                 imgList.append(imgUrl)
-        
+                break
+        return imgList
+
         if imgList[0] == firstPage and imgList[listLen-1] == self.getImgUrl(ulist[listLen-1].get('value')):
             return imgList
         else:
