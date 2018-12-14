@@ -39,8 +39,15 @@ class Seven33SoBaseBook(BaseComicBook):
 
         soup = BeautifulSoup(content, 'html.parser')
         soup = soup.find('div', {"class": "cy_plist"})
+        if (soup is None):
+            self.log.warn('cy_plist is not exist.')
+            return chapterList
 
         lias = soup.findAll('a')
+        if (lias is None):
+            self.log.warn('chapterList href is not exist.')
+            return chapterList
+
         for aindex in range(len(lias)):
             rindex = len(lias)-1-aindex
             href = "https://m.733.so/" + lias[rindex].get("href")
@@ -62,9 +69,17 @@ class Seven33SoBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         res = re.search(r'var qTcms_S_m_murl_e=".*";', content).group()
+        if (res is None):
+            self.log.warn('var qTcms_S_m_murl_e is not exist.')
+            return imgList
+
         list_encoded = res.split('\"')[1]
         lz_decoded = b64decode(list_encoded)
         images = lz_decoded.split("$qingtiandy$")
+
+        if (images is None):
+            self.log.warn('image list is not exist.')
+            return imgList
 
         for img in images:
             imgb64 = b64encode(img.replace("http://www.baidu1.com/", ""))
