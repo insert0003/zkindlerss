@@ -1401,7 +1401,7 @@ class BaseComicBook(BaseFeedBook):
                         self.log.warn('can not found image list: %s' % chapterList[newNum])
                         break
                     elif pageCount > 40:
-                        self.log.warn('comic pages count is over 30.')
+                        self.log.warn('comic pages count is over 40.')
                         break
 
                     for index in range(offset, imgLen):
@@ -1457,7 +1457,10 @@ class BaseComicBook(BaseFeedBook):
             result = opener.open(url)
             content = result.content
             if not content:
+                self.log.warn("Can not get image content: {}, continue.".format(url.encode('utf-8')))
                 continue
+            else:
+                self.log.info("start process image: {}.".format(url.encode('utf-8')))
 
             content = self.adjustImgContent(content);
             if content == None:
