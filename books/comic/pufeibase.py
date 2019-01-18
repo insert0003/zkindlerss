@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-#https://www.733.so或者https://m.733.so网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
+#http://www.pufei.net或者http://m.pufei.net网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
 #Author: insert0003 <https://github.com/insert0003>
-import re, json, urlparse, time
+import re, json
 from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
 from books.base import BaseComicBook
@@ -10,7 +10,7 @@ from bs4 import BeautifulSoup
 import urllib, urllib2, imghdr
 from base64 import b64decode, b64encode
 
-class Seven33SoBaseBook(BaseComicBook):
+class PuFeiBaseBook(BaseComicBook):
     title               = u''
     description         = u''
     language            = ''
@@ -18,7 +18,7 @@ class Seven33SoBaseBook(BaseComicBook):
     page_encoding       = ''
     mastheadfile        = ''
     coverfile           = ''
-    host                = 'https://m.733.so'
+    host                = 'http://m.pufei.net'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
 
     #获取漫画章节列表
@@ -27,8 +27,8 @@ class Seven33SoBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=60)
         chapterList = []
 
-        if url.startswith( "https://m.733.so" ):
-            url = url.replace('https://m.733.so', 'https://www.733.so')
+        if url.startswith( "http://www.pufei.net" ):
+            url = url.replace('http://www.pufei.net', 'http://m.pufei.net')
 
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
@@ -38,9 +38,9 @@ class Seven33SoBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'html.parser')
-        soup = soup.find('div', {"class": "cy_plist"})
+        soup = soup.find('div', {"class":"chapter-list", "id":"chapterList2"})
         if (soup is None):
-            self.log.warn('cy_plist is not exist.')
+            self.log.warn('chapter-list is not exist.')
             return chapterList
 
         lias = soup.findAll('a')
@@ -50,10 +50,38 @@ class Seven33SoBaseBook(BaseComicBook):
 
         for aindex in range(len(lias)):
             rindex = len(lias)-1-aindex
-            href = "https://www.733.so" + lias[rindex].get("href")
+            href = "http://m.pufei.net" + lias[rindex].get("href")
             chapterList.append(href)
 
         return chapterList
+
+    #获取图片信息
+    def get_node_online(self, input_str):
+        opts_str = 'console.log(%s)' % input_str.encode("utf-8")
+        try:
+            self.log.warn("Try use runoob execution nodejs.")
+            url = "https://m.runoob.com/api/compile.php"
+            params = {"code":opts_str, "stdin":"", "language":"4", "fileext":"node.js"}
+            params = urllib.urlencode(params)
+            req = urllib2.Request(url)
+            req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+            req.add_data(params)
+
+            res = urllib2.urlopen(req)
+            result = json.loads(res.read())
+            return result["output"]
+        except:
+            self.log.warn("Try use tutorialspoint execution nodejs.")
+            url = "https://tpcg.tutorialspoint.com/tpcg.php"
+            params = {"lang":"node", "device":"", "code":opts_str, "stdin":"", "ext":"js", "compile":0, "execute": "node main.js", "mainfile": "main.js", "uid": 4203253 }
+            params = urllib.urlencode(params)
+            req = urllib2.Request(url)
+            req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+            req.add_data(params)
+
+            res = urllib2.urlopen(req)
+            result = BeautifulSoup(res.read(), 'html.parser')
+            return result.find("br").text
 
     #获取漫画图片列表
     def getImgList(self, url):
@@ -66,43 +94,24 @@ class Seven33SoBaseBook(BaseComicBook):
             self.log.warn('fetch comic page failed: %s' % url)
             return imgList
 
-        urlpaths = urlparse.urlsplit(url.lower()).path.split("/")
-        if ( (u"mh" in urlpaths) and (urlpaths.index(u"mh")+2 < len(urlpaths)) ):
-            tid = str(time.time()).replace(".", "1")
-            cid = urlpaths[urlpaths.index(u"mh")+1]
-            pid = urlpaths[urlpaths.index(u"mh")+2].replace(".html", "")
-        else:
-            self.log.warn('Can not get cid and pid from URL: {}.'.format(url))
-            return imgList
-
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
-        res = re.search(r'var qTcms_S_m_murl_e=".*";', content).group()
+        res = re.search(r'cp=".*";', content).group()
         if (res is None):
             self.log.warn('var qTcms_S_m_murl_e is not exist.')
             return imgList
 
         list_encoded = res.split('\"')[1]
         lz_decoded = b64decode(list_encoded)
-        images = lz_decoded.split("$qingtiandy$")
+        lz_nodejs = self.get_node_online(lz_decoded)
 
-        if (images is None):
+        if (lz_nodejs is None):
             self.log.warn('image list is not exist.')
             return imgList
 
+        images = re.sub("\[|\]| |'|\n", "", lz_nodejs).split(",")
         for img in images:
-            # b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|pc'.format(tid, cid, pid)
-            # print b64str
-            # imgb64 = b64encode(b64str)
-            # img_url = u'http://img.tsjjx.com/newfile.php?data={}'.format(imgb64)
-            if "http://www.baidu1.com/" in img:
-                b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|pc'.format(tid, cid, pid)
-            elif "http://ac.tc.qq.com/" in img:
-                b64str = img + '|{}|{}|{}|pc'.format(tid, cid, pid)
-
-            imgb64 = b64encode(b64str)
-            img_url = u'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
-
+            img_url = "http://res.img.pufei.net/" + img
             imgList.append(img_url)
 
         return imgList
