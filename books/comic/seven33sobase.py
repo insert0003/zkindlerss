@@ -18,7 +18,7 @@ class Seven33SoBaseBook(BaseComicBook):
     page_encoding       = ''
     mastheadfile        = ''
     coverfile           = ''
-    host                = 'https://m.733.so'
+    host                = 'https://www.733.so'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
 
     #获取漫画章节列表
@@ -69,6 +69,8 @@ class Seven33SoBaseBook(BaseComicBook):
         urlpaths = urlparse.urlsplit(url.lower()).path.split("/")
         if ( (u"mh" in urlpaths) and (urlpaths.index(u"mh")+2 < len(urlpaths)) ):
             tid = str(time.time()).replace(".", "1")
+            if len(tid) == 12:
+                tid = tid + "1"
             cid = urlpaths[urlpaths.index(u"mh")+1]
             pid = urlpaths[urlpaths.index(u"mh")+2].replace(".html", "")
         else:
@@ -97,12 +99,16 @@ class Seven33SoBaseBook(BaseComicBook):
             # img_url = u'http://img.tsjjx.com/newfile.php?data={}'.format(imgb64)
             if "http://www.baidu1.com/" in img:
                 b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|pc'.format(tid, cid, pid)
+                imgb64 = b64encode(b64str)
+                img_url = u'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
             elif "http://ac.tc.qq.com/" in img:
                 b64str = img + '|{}|{}|{}|pc'.format(tid, cid, pid)
+                imgb64 = b64encode(b64str)
+                img_url = u'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
+            else:
+                img_url = img
 
-            imgb64 = b64encode(b64str)
-            img_url = u'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
-
+            self.log.info('Ths image herf is: %s' % img_url)
             imgList.append(img_url)
 
         return imgList

@@ -55,34 +55,6 @@ class GuFengBaseBook(BaseComicBook):
 
         return chapterList
 
-    #获取图片信息
-    def get_node_online(self, input_str):
-        opts_str = 'console.log(%s)' % input_str.encode("utf-8")
-        try:
-            self.log.warn("Try use runoob execution nodejs.")
-            url = "https://m.runoob.com/api/compile.php"
-            params = {"code":opts_str, "stdin":"", "language":"4", "fileext":"node.js"}
-            params = urllib.urlencode(params)
-            req = urllib2.Request(url)
-            req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
-            req.add_data(params)
-
-            res = urllib2.urlopen(req)
-            result = json.loads(res.read())
-            return result["output"]
-        except:
-            self.log.warn("Try use tutorialspoint execution nodejs.")
-            url = "https://tpcg.tutorialspoint.com/tpcg.php"
-            params = {"lang":"node", "device":"", "code":opts_str, "stdin":"", "ext":"js", "compile":0, "execute": "node main.js", "mainfile": "main.js", "uid": 4203253 }
-            params = urllib.urlencode(params)
-            req = urllib2.Request(url)
-            req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
-            req.add_data(params)
-
-            res = urllib2.urlopen(req)
-            result = BeautifulSoup(res.read(), 'html.parser')
-            return result.find("br").text
-
     #获取漫画图片列表
     def getImgList(self, url):
         decoder = AutoDecoder(isfeed=False)
