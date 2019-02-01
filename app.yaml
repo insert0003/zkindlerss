@@ -1,5 +1,5 @@
 application: kindleear
-version: 5-5-3
+version: 5-5-4
 runtime: python27
 api_version: 1
 threadsafe: true
