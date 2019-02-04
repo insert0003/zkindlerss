@@ -104,18 +104,22 @@ class Seven33SoBaseBook(BaseComicBook):
                 b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
 
             imgb64 = b64encode(b64str)
-            img_url = self.getImgUrl(u'http://img_733.234us.com/newfile.php?data={}'.format(imgb64))
+            requestImg = 'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
+            img_url = self.getImgUrl(requestImg)
+
             if not img_url:
-                imgList.append(img_url)
+                self.log.warn("can not get real url for : %s." % requestImg)
             else:
-                self.log.warn("can not get real url for : %s." % b64str)
+                imgList.append(img_url)
 
         return imgList
 
     #获取漫画图片格式
     def getImgUrl(self, url):
         opener = URLOpener(self.host, timeout=60)
-        headers = {'Host': "img_733.234us.com", 'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25'}
+        headers = {
+            'Host': "img_733.234us.com",
+            'User-Agent': 'Mozilla/5.0 (iPhone; CPU iPhone OS 6_0 like Mac OS X) AppleWebKit/536.26 (KHTML, like Gecko) Version/6.0 Mobile/10A5376e Safari/8536.25'}
         result = opener.open(url, headers=headers)
         if result.status_code != 200 or opener.realurl == url:
             self.log.warn('can not get real comic url for : %s' % url)
