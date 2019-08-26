@@ -89,23 +89,26 @@ class Seven33SoBaseBook(BaseComicBook):
             return imgList
 
         for img in images:
-            if "http://www.baidu1.com/" in img:
-                # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
-                # http://img_733.234us.com/newfile.php?data=MjAxNi8wNi8yOC8yMS8wNDJmMDUxYmVhLmpwZ3wxNTQ4OTgzNDA0ODkwfDI2Nzk4fDMwOTYzNnxt
-                b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
-            elif "http://ac.tc.qq.com/" in img:
-                b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
-            elif "http://res.gufengmh.com/" in img:
-                # http://res.gufengmh.com/images/comic/393/785728/1548900050B4iX-yPTclWGhKd1.jpg
-                # http://img_733.234us.com/newfile.php?data=aHR0cDovL3Jlcy5ndWZlbmdtaC5jb20vaW1hZ2VzL2NvbWljLzM5My83ODU3MjgvMTU0ODkwMDA1MEI0aVgteVBUY2xXR2hLZDEuanBnfDE1NDg5ODQwNTE0Nzh8MjY3OTh8NTgzMDI2fG0=
-                b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
+            if "https://res.gufengmh8.com/" in img:
+                img_url = img
             else:
-                self.log.warn('Ths image herf is: %s' % img_url)
-                b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
+                if "http://www.baidu1.com/" in img:
+                    # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
+                    # http://img_733.234us.com/newfile.php?data=MjAxNi8wNi8yOC8yMS8wNDJmMDUxYmVhLmpwZ3wxNTQ4OTgzNDA0ODkwfDI2Nzk4fDMwOTYzNnxt
+                    b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
+                elif "http://ac.tc.qq.com/" in img:
+                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
+                elif "http://res.gufengmh.com/" in img:
+                    # http://res.gufengmh.com/images/comic/393/785728/1548900050B4iX-yPTclWGhKd1.jpg
+                    # http://img_733.234us.com/newfile.php?data=aHR0cDovL3Jlcy5ndWZlbmdtaC5jb20vaW1hZ2VzL2NvbWljLzM5My83ODU3MjgvMTU0ODkwMDA1MEI0aVgteVBUY2xXR2hLZDEuanBnfDE1NDg5ODQwNTE0Nzh8MjY3OTh8NTgzMDI2fG0=
+                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
+                else:
+                    self.log.warn('Ths image herf is: %s' % img)
+                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
 
-            imgb64 = b64encode(b64str)
-            requestImg = 'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
-            img_url = self.getImgUrl(requestImg)
+                imgb64 = b64encode(b64str)
+                requestImg = 'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
+                img_url = self.getImgUrl(requestImg)
 
             if not img_url:
                 self.log.warn("can not get real url for : %s." % requestImg)
