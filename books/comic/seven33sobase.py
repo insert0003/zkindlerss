@@ -91,6 +91,8 @@ class Seven33SoBaseBook(BaseComicBook):
         for img in images:
             if "https://res.gufengmh8.com/" in img:
                 img_url = img
+            elif "http://res.img.pufei.net" in img:
+                img_url = img
             else:
                 if "http://www.baidu1.com/" in img:
                     # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
