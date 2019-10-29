@@ -179,7 +179,7 @@ class Worker(BaseHandler):
                 feeds = feedsId if feedsId else bk.feeds
                 book.feeds = []
                 for feed in feeds:
-                    if feed.url.startswith( ("http://www.cartoonmad.com", "https://www.cartoonmad.com", "http://ac.qq.com", "http://m.ac.qq.com", "https://www.manhuagui.com", "https://m.manhuagui.com", "https://www.733.so", "https://m.733.so", "http://www.pufei.net", "http://m.pufei.net", "http://www.gufengmh.com", "http://m.gufengmh.com") ) :
+                    if feed.url.startswith( ("http://www.cartoonmad.com", "https://www.cartoonmad.com", "http://ac.qq.com", "http://m.ac.qq.com", "https://www.manhuagui.com", "https://m.manhuagui.com", "https://www.733.so", "https://m.733.so", "http://www.pufei.net", "http://m.pufei.net", "https://www.gufengmh.com", "https://m.gufengmh.com") ) :
                         self.ProcessComicRSS(username, user, feed)
                     else:
                         book.feeds.append((feed.title, feed.url, feed.isfulltext))
@@ -391,7 +391,7 @@ class Worker(BaseHandler):
             book = Seven33SoBaseBook(imgindex=imgindex, opts=opts, user=user)
         elif feed.url.startswith( ("http://www.pufei.net", "http://m.pufei.net") ):
             book = PuFeiBaseBook(imgindex=imgindex, opts=opts, user=user)
-        elif feed.url.startswith( ("http://www.gufengmh.com", "http://m.gufengmh.com") ):
+        elif feed.url.startswith( ("https://www.gufengmh.com", "https://m.gufengmh.com") ):
             book = GuFengBaseBook(imgindex=imgindex, opts=opts, user=user)
         else:
             return "Failed to push book <%s>!"%feed.title

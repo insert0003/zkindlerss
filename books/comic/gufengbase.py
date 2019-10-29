@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-#http://www.gufengmh.com或者http://m.gufengmh.com网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
+#https://www.gufengmh.com或者https://m.gufengmh.com网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
 #Author: insert0003 <https://github.com/insert0003>
 import re, json
 from lib.urlopener import URLOpener
@@ -18,7 +18,7 @@ class GuFengBaseBook(BaseComicBook):
     page_encoding       = ''
     mastheadfile        = ''
     coverfile           = ''
-    host                = 'http://m.gufengmh.com'
+    host                = 'https://m.gufengmh.com'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
 
     #获取漫画章节列表
@@ -27,8 +27,8 @@ class GuFengBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=60)
         chapterList = []
 
-        if url.startswith( "http://www.gufengmh.com" ):
-            url = url.replace('http://www.gufengmh.com', 'http://m.gufengmh.com')
+        if url.startswith( "https://www.gufengmh.com" ):
+            url = url.replace('https://www.gufengmh.com', 'https://m.gufengmh.com')
 
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
@@ -50,9 +50,8 @@ class GuFengBaseBook(BaseComicBook):
             return chapterList
 
         for li in lias:
-            href = "http://m.gufengmh.com" + li.get("href")
+            href = "https://m.gufengmh.com" + li.get("href")
             chapterList.append(href)
-
         return chapterList
 
     #获取漫画图片列表
@@ -76,10 +75,10 @@ class GuFengBaseBook(BaseComicBook):
         else:
             chapterPath = chapterPath.group(2)
 
-        #var pageImage = "http://res.gufengmh.com/images/";
-        imgPrefix = re.search(r'(var pageImage = ")(.*)(/images/)', content)
+        #var pageImage = "https://res.gufengmh.com/gufeng/images/";
+        imgPrefix = re.search(r'(var pageImage = ")(.*)(gufeng/images/)', content)
         if (imgPrefix is None):
-            self.log.warn('var chapterImages is not exist.')
+            self.log.warn('"https://res.gufengmh.com/gufeng/images/ is not exist.')
             return imgList
         else:
             imgPrefix = imgPrefix.group(2)+"/"
@@ -94,7 +93,6 @@ class GuFengBaseBook(BaseComicBook):
 
         for img in images:
             img_url = imgPrefix + chapterPath + img.replace("\"","")
-            print img_url
             imgList.append(img_url)
 
         return imgList
