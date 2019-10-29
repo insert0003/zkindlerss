@@ -18,7 +18,7 @@ class PuFeiBaseBook(BaseComicBook):
     page_encoding       = ''
     mastheadfile        = ''
     coverfile           = ''
-    host                = 'http://m.pufei.net'
+    host                = 'http://www.pufei.net'
     feeds               = [] #子类填充此列表[('name', mainurl),...]
 
     #获取漫画章节列表
@@ -27,8 +27,8 @@ class PuFeiBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=60)
         chapterList = []
 
-        if url.startswith( "http://www.pufei.net" ):
-            url = url.replace('http://www.pufei.net', 'http://m.pufei.net')
+        if url.startswith( "http://m.pufei.net" ):
+            url = url.replace('http://m.pufei.net', 'http://www.pufei.net')
 
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
@@ -38,7 +38,8 @@ class PuFeiBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'html.parser')
-        soup = soup.find('div', {"class":"chapter-list", "id":"chapterList2"})
+		# <div class="plist pmedium max-h200" id="play_0">
+        soup = soup.find('div', {"class":"plist pmedium max-h200", "id":"play_0"})
         if (soup is None):
             self.log.warn('chapter-list is not exist.')
             return chapterList
@@ -50,7 +51,7 @@ class PuFeiBaseBook(BaseComicBook):
 
         for aindex in range(len(lias)):
             rindex = len(lias)-1-aindex
-            href = "http://m.pufei.net" + lias[rindex].get("href")
+            href = "http://www.pufei.net" + lias[rindex].get("href")
             chapterList.append(href)
 
         return chapterList
@@ -96,9 +97,9 @@ class PuFeiBaseBook(BaseComicBook):
 
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
-        res = re.search(r'cp=".*";', content).group()
+        res = re.search(r'packed=".*";', content).group()
         if (res is None):
-            self.log.warn('var qTcms_S_m_murl_e is not exist.')
+            self.log.warn('var photosr is not exist.')
             return imgList
 
         list_encoded = res.split('\"')[1]
@@ -109,9 +110,12 @@ class PuFeiBaseBook(BaseComicBook):
             self.log.warn('image list is not exist.')
             return imgList
 
-        images = re.sub("\[|\]| |'|\n", "", lz_nodejs).split(",")
+        # images01 = re.sub("\[|\]| |'|\n", "", lz_nodejs)
+        images = lz_nodejs.split("\"")
+		# http://res.img.220012.net/2017/08/22/13/343135d67f.jpg
         for img in images:
-            img_url = "http://res.img.pufei.net/" + img
-            imgList.append(img_url)
+            if ".jpg" in img:
+                img_url = "http://res.img.220012.net/" + img
+                imgList.append(img_url)
 
         return imgList
