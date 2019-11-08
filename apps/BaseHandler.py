@@ -26,27 +26,30 @@ from google.appengine.runtime.apiproxy_errors import (OverQuotaError,
 #import main
 
 #URL请求处理类的基类，实现一些共同的工具函数
-class BaseHandler:
-    def __init__(self):
-        if not main.session.get('lang'):
-            main.session.lang = self.browerlang()
-        set_lang(main.session.lang)
+class BaseHandler(object):
+    def __init__(self, setLang=True):
+        if setLang:
+            if not main.session.get('lang'):
+                main.session.lang = self.browerlang()
+            set_lang(main.session.lang)
         
     @classmethod
     def logined(self):
         return True if main.session.get('login') == 1 else False
     
     @classmethod
-    def login_required(self, username=None):
+    def login_required(self, username=None, forAjax=False):
         if (main.session.get('login') != 1) or (username and username != main.session.get('username')):
-            raise web.seeother(r'/login')
+            raise web.seeother(r'/needloginforajax' if forAjax else r'/login')
     
     @classmethod
-    def getcurrentuser(self):
-        self.login_required()
-        u = KeUser.all().filter("name = ", main.session.username).get()
+    def getcurrentuser(self, forAjax=False):
+        if main.session.get('login') != 1 or not main.session.get('username'):
+            raise web.seeother(r'/needloginforajax' if forAjax else r'/login')
+
+        u = KeUser.all().filter("name = ", main.session.get('username', '')).get()
         if not u:
-            raise web.seeother(r'/login')
+            raise web.seeother(r'/needloginforajax' if forAjax else r'/login')
         return u
 
     @classmethod
@@ -79,19 +82,6 @@ class BaseHandler:
                time=local_time(tz=tz), datetime=datetime.datetime.utcnow(),
                book=book, status=status)
             dl.put()
-
-            #漫画书籍的book格式为【漫画名 期数】
-            #通过titles的长度判断是否为漫画，更新记录。
-            titles = book.split(" ")
-            if len(titles) != 1:
-                dbItem = LastDelivered.all().filter('username = ', name).filter('bookname = ', titles[0]).get()
-                if status == 'ok' or status == 'sendgrid ok':
-                    dbItem.num = dbItem.trynum
-                    dbItem.offset = dbItem.tryoffset
-                elif not status.startswith("sendgrid"):
-                    dbItem.record = u' 第%d话' % dbItem.num
-                dbItem.put()
-
         except Exception as e:
             default_log.warn('DeliverLog failed to save:%s',str(e))
 
@@ -124,6 +114,7 @@ class BaseHandler:
     #TO可以是一个单独的字符串，或一个字符串列表，对应发送到多个地址
     @classmethod
     def SendToKindle(self, name, to, title, booktype, attachment, tz=TIMEZONE, filewithtime=True):
+        status = ''
         if PINYIN_FILENAME: # 将中文文件名转换为拼音
             from calibre.ebooks.unihandecode.unidecoder import Unidecoder
             decoder = Unidecoder()
@@ -139,7 +130,7 @@ class BaseHandler:
                 filename = "%s.%s"%(basename,booktype)
         else:
             filename = basename
-
+            
         sgenable, sgapikey = self.getsgapikey(name)
         for i in range(SENDMAIL_RETRY_CNT+1):
             try:
@@ -186,11 +177,13 @@ class BaseHandler:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='send failed')
                     break
             else:
+                status = 'ok'
                 if i < SENDMAIL_RETRY_CNT and sgenable and sgapikey:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz, status='sendgrid ok')
                 else:
                     self.deliverlog(name, str(to), title, len(attachment), tz=tz)
                 break
+        return status
     
     #TO可以是一个单独的字符串，或一个字符串列表，对应发送到多个地址
     @classmethod

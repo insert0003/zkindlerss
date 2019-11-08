@@ -11,17 +11,10 @@ import urllib, urllib2, imghdr
 from base64 import b64decode, b64encode
 
 class Seven33SoBaseBook(BaseComicBook):
-    title               = u''
-    description         = u''
-    language            = ''
-    feed_encoding       = ''
-    page_encoding       = ''
-    mastheadfile        = ''
-    coverfile           = ''
-    host                = 'https://m.733.so'
-    feeds               = [] #子类填充此列表[('name', mainurl),...]
+    accept_domains = ("https://www.733.so", "https://m.733.so")
+    host = "https://www.733.so"
 
-    #获取漫画章节列表
+    # 获取漫画章节列表
     def getChapterList(self, url):
         decoder = AutoDecoder(isfeed=False)
         opener = URLOpener(self.host, timeout=60)
@@ -38,16 +31,21 @@ class Seven33SoBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'html.parser')
-        lias = soup.select("html > body > div.Introduct > div#list > ul#mh-chapter-list-ol-0 > li > a")
-
+        # <ul class="Drama autoHeight" id="mh-chapter-list-ol-0">
+        soup = soup.find('ul', {"class":"Drama autoHeight", "id":"mh-chapter-list-ol-0"})
         if (soup is None):
+            self.log.warn('chapter-list is not exist.')
+            return chapterList
+
+        lias = soup.findAll('a')
+        if (lias is None):
             self.log.warn('chapter-list is not exist.')
             return chapterList
 
         for aindex in range(len(lias)):
             rindex = len(lias)-1-aindex
-            href = "https://m.733.so" + lias[rindex].get("href")
-            chapterList.append(href)
+            href = "https://m.733.so" + lias[rindex].get('href', '')
+            chapterList.append((lias[rindex].get_text(), href))
 
         return chapterList
 
@@ -89,33 +87,26 @@ class Seven33SoBaseBook(BaseComicBook):
             return imgList
 
         for img in images:
-            if "https://res.gufengmh8.com/" in img:
-                img_url = img
-            elif "http://res.img.pufei.net" in img:
-                img_url = img
+            if "http://www.baidu1.com/" in img:
+                # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
+                # http://img_733.234us.com/newfile.php?data=MjAxNi8wNi8yOC8yMS8wNDJmMDUxYmVhLmpwZ3wxNTQ4OTgzNDA0ODkwfDI2Nzk4fDMwOTYzNnxt
+                b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
+            elif ("http://ac.tc.qq.com/" in img) or ("http://res.gufengmh.com/" in img):
+                b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
             else:
-                if "http://www.baidu1.com/" in img:
-                    # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
-                    # http://img_733.234us.com/newfile.php?data=MjAxNi8wNi8yOC8yMS8wNDJmMDUxYmVhLmpwZ3wxNTQ4OTgzNDA0ODkwfDI2Nzk4fDMwOTYzNnxt
-                    b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
-                elif "http://ac.tc.qq.com/" in img:
-                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
-                elif "http://res.gufengmh.com/" in img:
-                    # http://res.gufengmh.com/images/comic/393/785728/1548900050B4iX-yPTclWGhKd1.jpg
-                    # http://img_733.234us.com/newfile.php?data=aHR0cDovL3Jlcy5ndWZlbmdtaC5jb20vaW1hZ2VzL2NvbWljLzM5My83ODU3MjgvMTU0ODkwMDA1MEI0aVgteVBUY2xXR2hLZDEuanBnfDE1NDg5ODQwNTE0Nzh8MjY3OTh8NTgzMDI2fG0=
-                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
-                else:
-                    self.log.warn('Ths image herf is: %s' % img)
-                    b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
+                # https://res.gufengmh8.com/
+                # http://res.img.pufei.net
+                # https://images.dmzj.com/
+                self.log.warn('Ths image herf is: %s' % img)
+                b64str = img
 
+            if b64str == img:
+                img_url = b64str
+            else:
                 imgb64 = b64encode(b64str)
                 requestImg = 'http://img_733.234us.com/newfile.php?data={}'.format(imgb64)
                 img_url = self.getImgUrl(requestImg)
-
-            if not img_url:
-                self.log.warn("can not get real url for : %s." % requestImg)
-            else:
-                imgList.append(img_url)
+            imgList.append(img_url)
 
         return imgList
 

@@ -11,15 +11,8 @@ import urllib, urllib2, imghdr
 from base64 import b64decode, b64encode
 
 class GuFengBaseBook(BaseComicBook):
-    title               = u''
-    description         = u''
-    language            = ''
-    feed_encoding       = ''
-    page_encoding       = ''
-    mastheadfile        = ''
-    coverfile           = ''
-    host                = 'https://m.gufengmh.com'
-    feeds               = [] #子类填充此列表[('name', mainurl),...]
+    accept_domains = ("https://www.gufengmh.com", "https://m.gufengmh.com")
+    host = "https://m.gufengmh.com"
 
     #获取漫画章节列表
     def getChapterList(self, url):
@@ -49,9 +42,14 @@ class GuFengBaseBook(BaseComicBook):
             self.log.warn('chapterList href is not exist.')
             return chapterList
 
-        for li in lias:
-            href = "https://m.gufengmh.com" + li.get("href")
-            chapterList.append(href)
+        for index, a in enumerate(lias):
+            href = self.urljoin("https://m.gufengmh.com", a.get('href', ''))
+            span = a.find("span")
+            if span is None:
+                chapterList.append((u'第%d话'%(index+1), href))
+            else:
+                chapterList.append((unicode(span.contents[0]), href))
+
         return chapterList
 
     #获取漫画图片列表

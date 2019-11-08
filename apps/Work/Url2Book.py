@@ -11,7 +11,7 @@ import web, zlib, base64
 import jinja2
 from apps.BaseHandler import BaseHandler
 from apps.dbModels import *
-from apps.utils import InsertToc, local_time
+from apps.utils import local_time
 from lib.makeoeb import *
 
 from books.base import BaseUrlBook
@@ -34,6 +34,7 @@ class Url2Book(BaseHandler):
         
         if (';' in to) or (',' in to):
             to = to.replace(',', ';').replace(' ', '').split(';')
+            to = list(filter(lambda x: x.find('@', 1, len(x) - 1) > 0, to)) #最简单的判断是否是EMAIL
         
         if type(urls) is unicode:
             urls = urls.encode('utf-8')
