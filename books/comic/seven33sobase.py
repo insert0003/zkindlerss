@@ -90,7 +90,9 @@ class Seven33SoBaseBook(BaseComicBook):
             if "http://www.baidu1.com/" in img:
                 # http://www.baidu1.com/2016/06/28/21/042f051bea.jpg
                 # http://img_733.234us.com/newfile.php?data=MjAxNi8wNi8yOC8yMS8wNDJmMDUxYmVhLmpwZ3wxNTQ4OTgzNDA0ODkwfDI2Nzk4fDMwOTYzNnxt
-                b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
+                # b64str = img.replace("http://www.baidu1.com/", "") + '|{}|{}|{}|m'.format(tid, cid, pid)
+                b64str = img.replace("http://www.baidu1.com/", "http://img_733.234us.com/")
+                img = b64str
             elif ("http://ac.tc.qq.com/" in img) or ("http://res.gufengmh.com/" in img):
                 b64str = img + '|{}|{}|{}|m'.format(tid, cid, pid)
             else:
