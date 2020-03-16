@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 # encoding: utf-8
-#http://www.pufei.net或者http://m.pufei.net网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
+#http://www.pufei8.com或者http://m.pufei8.com网站的免费漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
 #Author: insert0003 <https://github.com/insert0003>
 import re, json
 from lib.urlopener import URLOpener
@@ -10,8 +10,8 @@ from bs4 import BeautifulSoup
 import urllib, urllib2, imghdr
 
 class PuFeiBaseBook(BaseComicBook):
-    accept_domains = ("http://www.pufei.net", "http://m.pufei.net")
-    host = "http://www.pufei.net"
+    accept_domains = ("http://www.pufei8.com", "http://m.pufei.com")
+    host = "http://www.pufei8.com"
 
     #获取漫画章节列表
     def getChapterList(self, url):
@@ -19,8 +19,8 @@ class PuFeiBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=60)
         chapterList = []
 
-        if url.startswith( "http://m.pufei.net" ):
-            url = url.replace('http://m.pufei.net', 'http://www.pufei.net')
+        if url.startswith( "http://m.pufei8.com" ):
+            url = url.replace('http://m.pufei8.com', 'http://www.pufei8.com')
 
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
@@ -42,7 +42,7 @@ class PuFeiBaseBook(BaseComicBook):
             return chapterList
 
         for index, a in enumerate(lias):
-            href = self.urljoin("http://www.pufei.net", a.get('href', ''))
+            href = self.urljoin("http://www.pufei8.com", a.get('href', ''))
             chapterList.append((unicode(lias[index].string), href))
 
         return list(reversed(chapterList))
@@ -131,6 +131,7 @@ class PuFeiBaseBook(BaseComicBook):
 
         # photosr[1]="images/2019/11/08/09/19904f5d64.jpg/0";...photosr[98]="images/2019/11/08/09/22abc96bd2.jpg/0";
         images = lz_nodejs.split("\"")
+        self.log.info(images)
 		# http://res.img.220012.net/2017/08/22/13/343135d67f.jpg
         for img in images:
             if ".jpg" in img:

@@ -1495,6 +1495,9 @@ class BaseComicBook(BaseFeedBook):
 
             #先判断是否是图片
             imgType = imghdr.what(None, content)
+            if url.startswith("https://www.cartoonmad.com") and imgType is None:
+                self.log.info("{} type is {}, change to jpeg".format(url, imgType))
+                imgType="jpeg"
             if imgType:
                 content = self.process_image_comic(content)
                 if content:
@@ -1509,6 +1512,9 @@ class BaseComicBook(BaseFeedBook):
                             yield (imgMime, imgPartUrl, fnImg, imgPartContent, None, True)
                     else: #单个图片
                         imgType = imghdr.what(None, content)
+                        if url.startswith("https://www.cartoonmad.com") and imgType is None:
+                            self.log.info("{} type is {}, change to jpeg".format(url, imgType))
+                            imgType="jpeg"
                         imgMime = r"image/" + imgType
                         fnImg = "img%d.%s" % (self.imgindex, 'jpg' if imgType == 'jpeg' else imgType)
                         imgFilenameList.append(fnImg)

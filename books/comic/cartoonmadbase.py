@@ -2,6 +2,7 @@
 # -*- coding:utf-8 -*-
 #http://www.cartoonmad.com网站的漫画的基类，简单提供几个信息实现一个子类即可推送特定的漫画
 #Author: insert0003 <https://github.com/insert0003>
+import re
 from bs4 import BeautifulSoup
 from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
@@ -63,15 +64,14 @@ class CartoonMadBaseBook(BaseComicBook):
             self.log.warn('can not get first image real url : %s' % url)
             return imgList
 
-        # https://www.cartoonmad.com/home1/z2r26v3tr17/5582/001/001.jpg
+        # https://www.cartoonmad.com/75550/4897/001/001.jpg
         imgTail = firstPage.split("/")[-1]
         imgLeng = len(imgTail.split(".")[0])
         imgType = "."+imgTail.split(".")[1]
         imgBase = firstPage.replace(imgTail, "")
 
-        imgList.append(firstPage)
         for index in range(len(ulist)):
-            imgUrl = "{}{}{}".format(imgBase, str(index+2).zfill(imgLeng), imgType)
+            imgUrl = "{}{}{}".format(imgBase, str(index+1).zfill(imgLeng), imgType)
             imgList.append(imgUrl)
 
         if imgList[0] != firstPage or imgList[-1] != self.getImgUrl(ulist[-1]):
@@ -79,6 +79,7 @@ class CartoonMadBaseBook(BaseComicBook):
             for ul in ulist:
                 imgList.append(self.getImgUrl(ul))
 
+        self.log.info(imgList)
         return imgList
 
     #获取漫画图片网址
@@ -93,8 +94,21 @@ class CartoonMadBaseBook(BaseComicBook):
             return None
 
         content = self.AutoDecodeContent(result.content, decoder, self.page_encoding, opener.realurl, result.headers)
-        soup = BeautifulSoup(content, 'html.parser')
 
+        # var link = 'https://www.cartoonmad.com/comic/489700014051001.html';
+        if "var link" not in content:
+            self.log.warn(u"Can't find var link {}".format(url))
+            return imgUrlList
+
+        realurl = re.search("var link = '(.*)';", content).group(1)
+
+        result = opener.open(realurl)
+        if result.status_code != 200 or not result.content:
+            self.log.warn('fetch comic page failed: %s' % url)
+            return None
+
+        content = self.AutoDecodeContent(result.content, decoder, self.page_encoding, opener.realurl, result.headers)
+        soup = BeautifulSoup(content, 'html.parser')
         sel = soup.find('select') #页码行，要提取所有的页面
         if (sel is None):
             self.log.warn('soup select is not exist.')
@@ -105,6 +119,7 @@ class CartoonMadBaseBook(BaseComicBook):
             self.log.warn('select option is not exist.')
             return None
 
+        imgUrlList.append(realurl)
         for ul in ulist:
             if ul.get('value') == None:
                 ulist.remove(ul)
@@ -112,16 +127,30 @@ class CartoonMadBaseBook(BaseComicBook):
                 href = self.host + '/comic/' + ul.get('value')
                 imgUrlList.append(href)
 
+        self.log.info(imgUrlList)
         return imgUrlList
 
     #获取漫画图片格式
     def getImgUrl(self, url):
+        # From: https://www.cartoonmad.com/comic/489700014051001.html
+        # To: https://www.cartoonmad.com/75550/4897/001/001.jpg
+        tail = url.split("/")[-1].split(".")[0]
+        cid = tail[:4]
+        tid = tail[5:8]
+        pid = tail[-3:]
+
+        if cid == "1643" or cid == "1220":
+          imgurl = "https://web.cartoonmad.com/75682/{}/{}/{}.jpg".format(cid, tid, pid)
+        else:
+          imgurl = "https://www.cartoonmad.com/75550/{}/{}/{}.jpg".format(cid, tid, pid)
+        return imgurl
+
         decoder = AutoDecoder(isfeed=False)
         opener = URLOpener(self.host, timeout=60)
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
-            self.log.warn('fetch comic page failed: %s' % url)
-            return None
+           self.log.warn('fetch comic page failed: %s' % url)
+           return None
 
         content = self.AutoDecodeContent(result.content, decoder, self.page_encoding, opener.realurl, result.headers)
         soup = BeautifulSoup(content, 'html.parser')
