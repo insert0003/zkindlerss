@@ -63,11 +63,17 @@ class CartoonMadBaseBook(BaseComicBook):
             self.log.warn('can not get first image real url : %s' % url)
             return imgList
 
-        # https://www.cartoonmad.com/75550/4897/001/001.jpg
+
         imgTail = firstPage.split("/")[-1]
         imgLeng = len(imgTail.split(".")[0])
-        imgType = "."+imgTail.split(".")[1]
         imgBase = firstPage.replace(imgTail, "")
+
+        if "comicpic" in firstPage:
+            # https://www.cartoonmad.com/comic/comicpic.asp?file=/5531/143/001
+            imgType = ""
+        else:
+            # https://www.cartoonmad.com/75550/4897/001/001.jpg
+            imgType = "."+imgTail.split(".")[1]
 
         for index in range(len(ulist)):
             imgUrl = "{}{}{}".format(imgBase, str(index+1).zfill(imgLeng), imgType)
@@ -124,10 +130,17 @@ class CartoonMadBaseBook(BaseComicBook):
         tid = tail[5:8]
         pid = tail[-3:]
 
-        if cid == "1643" or cid == "1220":
-          imgurl = "https://web.cartoonmad.com/75699/{}/{}/{}.jpg".format(cid, tid, pid)
+        # if cid == "1643" or cid == "1220":
+        #   imgurl = "https://web.cartoonmad.com/75699/{}/{}/{}.jpg".format(cid, tid, pid)
+        # elif cid == "5531" or cid == "5187":
+        #   imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}".format(cid, tid, pid)
+        # else:
+        #   imgurl = "https://www.cartoonmad.com/75566/{}/{}/{}.jpg".format(cid, tid, pid)
+        if cid == "2704":
+            # https://www.cartoonmad.com/comic/comicpic.asp?file=/2704/003/001&rimg=1
+            imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}&rimg=1".format(cid, tid, pid)
         else:
-          imgurl = "https://www.cartoonmad.com/75566/{}/{}/{}.jpg".format(cid, tid, pid)
+            imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}".format(cid, tid, pid)
         return imgurl
 
         decoder = AutoDecoder(isfeed=False)

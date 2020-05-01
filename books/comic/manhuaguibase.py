@@ -152,8 +152,9 @@ class ManHuaGuiBaseBook(BaseComicBook):
         codes = self.get_node_online(res)
         pages_opts = json.loads(re.search(r'^SMH.reader\((.*)\)\.preInit\(\);$', codes).group(1))
 
-        cid = self.getChapterId(url)
-        md5 = pages_opts["sl"]["md5"]
+        # cid = self.getChapterId(url)
+        m = pages_opts["sl"]["m"]
+        e = pages_opts["sl"]["e"]
         images = pages_opts["images"]
 
         if (images is None):
@@ -161,7 +162,8 @@ class ManHuaGuiBaseBook(BaseComicBook):
             return imgList
 
         for img in images:
-            img_url = u'https://i.hamreus.com{}?cid={}&md5={}'.format(img, cid, md5)
+            # https://i.hamreus.com/ps3/p/pingxingtt_gbl/%E7%AC%AC117%E8%AF%9D/1_7684.jpg.webp?e=1769209619&m=MOn_QAAi-qwQBaRjlmNYkA
+            img_url = u'https://i.hamreus.com{}?e={}&m={}'.format(img, e, m)
             imgList.append(img_url)
 
         return imgList
