@@ -7,10 +7,11 @@ from lib.urlopener import URLOpener
 from lib.autodecoder import AutoDecoder
 from books.base import BaseComicBook
 from bs4 import BeautifulSoup
+from base64 import b64decode, b64encode
 
 class Seven33SoBaseBook(BaseComicBook):
-    accept_domains = ("http://www.733mh.com", "http://m.733mh.com")
-    host = "http://www.733mh.com"
+    accept_domains = ("https://www.733.so", "https://m.733.so")
+    host = "https://www.733.so"
 
     # 获取漫画章节列表
     def getChapterList(self, url):
@@ -18,8 +19,8 @@ class Seven33SoBaseBook(BaseComicBook):
         opener = URLOpener(self.host, timeout=60)
         chapterList = []
 
-        if url.startswith( "http://www.733mh.com" ):
-            url = url.replace('http://www.733mh.com', 'http://m.733mh.com')
+        if url.startswith( "https://www.733.so" ):
+            url = url.replace('https://www.733.so', 'https://m.733.so')
 
         result = opener.open(url)
         if result.status_code != 200 or not result.content:
@@ -29,8 +30,8 @@ class Seven33SoBaseBook(BaseComicBook):
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
         soup = BeautifulSoup(content, 'html.parser')
-        # <div class="chapter-list" id="chapterList">
-        soup = soup.find('div', {"class":"chapter-list", "id":"chapterList"})
+        # <ul class="Drama autoHeight" id="mh-chapter-list-ol-0">
+        soup = soup.find('ul', {"class":"Drama autoHeight", "id":"mh-chapter-list-ol-0"})
         if (soup is None):
             self.log.warn('chapter-list is not exist.')
             return chapterList
@@ -40,9 +41,10 @@ class Seven33SoBaseBook(BaseComicBook):
             self.log.warn('chapter-list is not exist.')
             return chapterList
 
+        # https://m.733.so/mh/28038/1109102.html
         for aindex in range(len(lias)):
             rindex = len(lias)-1-aindex
-            href = "http://m.733mh.com" + lias[rindex].get('href', '')
+            href = "https://m.733.so" + lias[rindex].get('href', '')
             chapterList.append((lias[rindex].get_text(), href))
 
         return chapterList
@@ -60,16 +62,21 @@ class Seven33SoBaseBook(BaseComicBook):
 
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 
-        res = re.search(r'photosr(.*)";', content).group()
+        res = re.search(r'qTcms_S_m_murl_e="(.*)";', content).group()
         if (res is None):
             self.log.warn(content)
             self.log.warn('var qTcms_S_m_murl_e is not exist.')
             return imgList
 
-        images = res.split(";")
-        for ori in images:
-            if ori != "":
-                img = re.search(r'\"(.*)\"', ori).group(1)
-                img_url = "http://tutu.gugumanhuawang.com/{}".format(img)
-                imgList.append(img_url)
+        list_encoded = res.split('\"')[1]
+        lz_decoded = b64decode(list_encoded)
+        images = lz_decoded.split("$qingtiandy$")
+
+        if (images is None):
+            self.log.warn('image list is not exist.')
+            return imgList
+
+        for img in images:
+            imgList.append(img)
+
         return imgList

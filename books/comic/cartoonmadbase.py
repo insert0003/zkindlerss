@@ -65,15 +65,20 @@ class CartoonMadBaseBook(BaseComicBook):
 
 
         imgTail = firstPage.split("/")[-1]
-        imgLeng = len(imgTail.split(".")[0])
-        imgBase = firstPage.replace(imgTail, "")
-
-        if "comicpic" in firstPage:
+        if "rimg" in imgTail:
+            # https://www.cartoonmad.com/comic/comicpic.asp?file=/5531/143/001&rimg=1
+            imgLeng = len(imgTail.split("&")[0])
+            imgType = "&"+imgTail.split("&")[1]
+        elif "comicpic" in firstPage:
             # https://www.cartoonmad.com/comic/comicpic.asp?file=/5531/143/001
+            imgLeng = len(imgTail)
             imgType = ""
         else:
             # https://www.cartoonmad.com/75550/4897/001/001.jpg
+            imgLeng = len(imgTail.split(".")[0])
             imgType = "."+imgTail.split(".")[1]
+
+        imgBase = firstPage.replace(imgTail, "")
 
         for index in range(len(ulist)):
             imgUrl = "{}{}{}".format(imgBase, str(index+1).zfill(imgLeng), imgType)
@@ -136,11 +141,14 @@ class CartoonMadBaseBook(BaseComicBook):
         #   imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}".format(cid, tid, pid)
         # else:
         #   imgurl = "https://www.cartoonmad.com/75566/{}/{}/{}.jpg".format(cid, tid, pid)
-        if cid == "2704":
-            # https://www.cartoonmad.com/comic/comicpic.asp?file=/2704/003/001&rimg=1
+
+        imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}".format(cid, tid, pid)
+        opener = URLOpener(self.host, timeout=60)
+        result = opener.open(imgurl)
+        if "ct.png" in opener.realurl:
+            self.log.warn('The comic opener.realurl is {} instead for : {}'.format(opener.realurl, imgurl))
             imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}&rimg=1".format(cid, tid, pid)
-        else:
-            imgurl = "https://www.cartoonmad.com/comic/comicpic.asp?file=/{}/{}/{}".format(cid, tid, pid)
+
         return imgurl
 
         decoder = AutoDecoder(isfeed=False)

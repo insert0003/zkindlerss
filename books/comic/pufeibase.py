@@ -129,13 +129,16 @@ class PuFeiBaseBook(BaseComicBook):
             self.log.warn('image list is not exist.')
             return imgList
 
-        # photosr[1]="images/2019/11/08/09/19904f5d64.jpg/0";...photosr[98]="images/2019/11/08/09/22abc96bd2.jpg/0";
         images = lz_nodejs.split("\"")
         self.log.info(images)
-		# http://res.img.220012.net/2017/08/22/13/343135d67f.jpg
         for img in images:
-            if ".jpg" in img:
-                img_url = self.urljoin("http://res.img.220012.net", img)
+            # photosr[1]="images/2020/05/03/17/516bbfddb4.jpg/0";...photosr[98]="images/2019/11/08/09/22abc96bd2.jpg/0";
+            # http://res.img.fffimage.com/images/2020/05/03/17/516bbfddb4.jpg/0
+
+            # photosr[1]="images/2020/04/21/09/3706a024c8.png/0";...photosr[12]="images/2020/04/21/09/3732355905.png/0";
+            # http://res.img.fffimage.com/images/2020/04/21/09/3706a024c8.png/0
+            if ".jpg" in img or ".png" in img:
+                img_url = self.urljoin("http://res.img.fffimage.com/", img)
                 imgList.append(img_url)
 
         return imgList
