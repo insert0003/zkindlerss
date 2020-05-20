@@ -36,18 +36,19 @@ class ManHuaGuiBaseBook(BaseComicBook):
         for njRetry in range(3):
             try:
                 if njRetry == 0:
-                    self.log.info("Try use rextester execution nodejs.")
-                    url = "https://rextester.com/rundotnet/Run"
-
-                    params = {"LanguageChoiceWrapper":"23", "EditorChoiceWrapper":1, "LayoutChoiceWrapper":1, "Program":opts_str, "Input":"", "Privacy":"", "PrivacyUsers":"", "Title": "", "SavedOutput": "", "WholeError": "", "WholeWarning": "", "StatsToSave": "", "CodeGuid": "", "IsInEditMode": False, "IsLive": False }
+                    self.log.info("Try use runoob execution nodejs.")
+                    url = "https://tool.runoob.com/compile2.php"
+                    params = {"code":opts_str, "token":"4381fe197827ec87cbac9552f14ec62a", "language":"4", "fileext":"node.js"}
                     params = urllib.urlencode(params)
                     req = urllib2.Request(url)
                     req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
                     req.add_data(params)
 
                     res = urllib2.urlopen(req)
-                    result = json.loads(res.read())
-                    return result["Result"]
+                    result = res.read()
+                    result = result.replace("\/", "/")
+                    result = json.loads(result)
+                    return result["output"]
                 elif njRetry == 1:
                     self.log.info("Try use tutorialspoint execution nodejs.")
                     url = "https://tpcg.tutorialspoint.com/tpcg.php"
@@ -61,19 +62,18 @@ class ManHuaGuiBaseBook(BaseComicBook):
                     result = BeautifulSoup(res.read(), 'html.parser')
                     return result.find("br").text
                 else:
-                    self.log.info("Try use runoob execution nodejs.")
-                    url = "https://tool.runoob.com/compile.php"
-                    params = {"code":opts_str, "token":"4381fe197827ec87cbac9552f14ec62a", "language":"4", "fileext":"node.js"}
+                    self.log.info("Try use rextester execution nodejs.")
+                    url = "https://rextester.com/rundotnet/Run"
+
+                    params = {"LanguageChoiceWrapper":"23", "EditorChoiceWrapper":1, "LayoutChoiceWrapper":1, "Program":opts_str, "Input":"", "Privacy":"", "PrivacyUsers":"", "Title": "", "SavedOutput": "", "WholeError": "", "WholeWarning": "", "StatsToSave": "", "CodeGuid": "", "IsInEditMode": False, "IsLive": False }
                     params = urllib.urlencode(params)
                     req = urllib2.Request(url)
                     req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
                     req.add_data(params)
 
                     res = urllib2.urlopen(req)
-                    result = res.read()
-                    result = result.replace("\/", "/")
-                    result = json.loads(result)
-                    return result["output"]
+                    result = json.loads(res.read())
+                    return result["Result"]
             except Exception, e:
                 self.log.warn('str(Exception):{}'.format(str(e)))
                 continue
@@ -87,10 +87,18 @@ class ManHuaGuiBaseBook(BaseComicBook):
         url = url.replace("https://www.manhuagui.com", "https://m.manhuagui.com")
         url = url.replace("https://tw.manhuagui.com", "https://m.manhuagui.com")
 
-        result = opener.open(url)
-        if result.status_code != 200 or not result.content:
-            self.log.warn('fetch comic page failed: %s' % url)
-            return chapterList
+        for njRetry in range(10):
+            try:
+                result = opener.open(url)
+                if result.status_code == 200 and result.content:
+                    break
+            except Exception, e:
+                if njRetry < 5:
+                    self.log.warn('fetch comic page failed: %s, retry' % url)
+                    continue
+                else:
+                    self.log.warn('fetch comic page failed: %s' % url)
+                    return chapterList
 
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
 

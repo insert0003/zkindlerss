@@ -49,38 +49,13 @@ class PuFeiBaseBook(BaseComicBook):
 
     #获取图片信息
     def get_node_online(self, input_str):
-        opts_str = 'console.log(%s)' % input_str.encode("utf-8")
+        opts_str = input_str.encode("utf-8")
 
         for njRetry in range(3):
             try:
                 if njRetry == 0:
-                    self.log.info("Try use rextester execution nodejs.")
-                    url = "https://rextester.com/rundotnet/Run"
-
-                    params = {"LanguageChoiceWrapper":"23", "EditorChoiceWrapper":1, "LayoutChoiceWrapper":1, "Program":opts_str, "Input":"", "Privacy":"", "PrivacyUsers":"", "Title": "", "SavedOutput": "", "WholeError": "", "WholeWarning": "", "StatsToSave": "", "CodeGuid": "", "IsInEditMode": False, "IsLive": False }
-                    params = urllib.urlencode(params)
-                    req = urllib2.Request(url)
-                    req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
-                    req.add_data(params)
-
-                    res = urllib2.urlopen(req)
-                    result = json.loads(res.read())
-                    return result["Result"]
-                elif njRetry == 1:
-                    self.log.info("Try use tutorialspoint execution nodejs.")
-                    url = "https://tpcg.tutorialspoint.com/tpcg.php"
-                    params = {"lang":"node", "device":"", "code":opts_str, "stdinput":"", "ext":"js", "compile":0, "execute": "node main.js", "mainfile": "main.js", "uid": 9920007 }
-                    params = urllib.urlencode(params)
-                    req = urllib2.Request(url)
-                    req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
-                    req.add_data(params)
-
-                    res = urllib2.urlopen(req)
-                    result = BeautifulSoup(res.read(), 'html.parser')
-                    return result.find("br").text
-                else:
                     self.log.info("Try use runoob execution nodejs.")
-                    url = "https://tool.runoob.com/compile.php"
+                    url = "https://tool.runoob.com/compile2.php"
                     params = {"code":opts_str, "token":"4381fe197827ec87cbac9552f14ec62a", "language":"4", "fileext":"node.js"}
                     params = urllib.urlencode(params)
                     req = urllib2.Request(url)
@@ -92,6 +67,33 @@ class PuFeiBaseBook(BaseComicBook):
                     result = result.replace("\/", "/")
                     result = json.loads(result)
                     return result["output"]
+                elif njRetry == 1:
+                    self.log.info("Try use rextester execution nodejs.")
+                    url = "https://rextester.com/rundotnet/Run"
+
+                    params = {"LanguageChoiceWrapper":"23", "EditorChoiceWrapper":1, "LayoutChoiceWrapper":1, "Program":opts_str, "Input":"", "Privacy":"", "PrivacyUsers":"", "Title": "", "SavedOutput": "", "WholeError": "", "WholeWarning": "", "StatsToSave": "", "CodeGuid": "", "IsInEditMode": False, "IsLive": False }
+                    params = urllib.urlencode(params)
+                    req = urllib2.Request(url)
+                    req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+                    req.add_header('Connection', 'keep-alive')
+                    req.add_data(params)
+
+                    res = urllib2.urlopen(req)
+                    result = json.loads(res.read())
+                    return result["Result"]
+                else:
+                    self.log.info("Try use tutorialspoint execution nodejs.")
+                    url = "https://tpcg.tutorialspoint.com/tpcg.php"
+                    params = {"lang":"node", "device":"", "code":opts_str, "stdinput":"", "ext":"js", "compile":0, "execute": "node main.js", "mainfile": "main.js", "uid": 690396 }
+                    params = urllib.urlencode(params)
+                    req = urllib2.Request(url)
+                    req.add_header('Content-Type', 'application/x-www-form-urlencoded; charset=UTF-8')
+                    req.add_header('Connection', 'keep-alive')
+                    req.add_data(params)
+
+                    res = urllib2.urlopen(req)
+                    result = BeautifulSoup(res.read(), 'html.parser')
+                    return result.find("br").text
             except Exception, e:
                 self.log.warn('str(Exception):{}'.format(str(e)))
                 continue
@@ -108,23 +110,18 @@ class PuFeiBaseBook(BaseComicBook):
             return imgList
 
         content = self.AutoDecodeContent(result.content, decoder, self.feed_encoding, opener.realurl, result.headers)
+        soup = BeautifulSoup(content, 'html.parser')
 
         try:
-            # function base64decode(str){*};
             func = re.search(r'function\ base64decode\(str\){.*};', content).group()
-            func = func.split('base64decode')[1].replace('};', '}')
-
-            # packed="*";
             packed = re.search(r'packed=".*";', content).group()
-            packed = packed.split('\"')[1]
         except:
-            self.log.warn('var photosr is not exist.')
+            self.log.warn('var photosr is not exist in {}.'.format(url))
             return imgList
 
         # eval(function(str){*}("*").slice(4))
-        lz_input = "eval(function{}(\"{}\").slice(4))".format(func, packed)
+        lz_input = "{}var photosr = new Array();{}console.log(eval(base64decode(packed).slice(4)));".format(func, packed)
         lz_nodejs = self.get_node_online(lz_input)
-
         if (lz_nodejs is None):
             self.log.warn('image list is not exist.')
             return imgList
