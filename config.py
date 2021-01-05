@@ -4,8 +4,8 @@
 KindleEar配置文件，请务必修改开始两个配置（如果使用uploader，则uploader自动帮你修改）
 """
 
-SRC_EMAIL = "akindleear@gmail.com"
-DOMAIN = "https://kindleear.appspot.com"
+SRC_EMAIL = "valon.zheng@gmail.com"
+DOMAIN = "https://abooks.appspot.com"
 
 TIMEZONE = 8  #Default timezone, you can modify it in webpage after deployed
 
@@ -45,7 +45,7 @@ GENERATE_TOC_THUMBNAIL = True
 GENERATE_HTML_TOC = True
 
 #if convert color image to gray or not, good for reducing size of book if you read it in Kindle only
-COLOR_TO_GRAY = True
+COLOR_TO_GRAY = False
 
 #Split long image(height of image is bigger than some value) to multiple images or not?
 #This feature is disabled if it be set to None or 0.

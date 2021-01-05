@@ -1,3 +1,2 @@
-python helper.py
-appcfg.py update ./app.yaml ./module-worker.yaml
-appcfg.py update .
+echo "version:" $1
+gcloud app deploy --version=$1 ./app.yaml ./module-worker.yaml

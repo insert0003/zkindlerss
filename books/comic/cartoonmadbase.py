@@ -129,12 +129,19 @@ class CartoonMadBaseBook(BaseComicBook):
     # 获取漫画图片格式
     def getImgUrl(self, url):
         # From: https://www.cartoonmad.com/comic/489700014051001.html
+        # From: https://www.cartoonmad.com/comic/115210002014001.html
         # To: https://www.cartoonmad.com/75550/4897/001/001.jpg
+        # To: https://www.cartoonmad.com/75613/1152/1000/001.jpg
+        # To: https://www.cartoonmad.com/comic/comicpic.asp?file=/1152/1000/001
         tail = url.split("/")[-1].split(".")[0]
         cid = tail[:4]
-        tid = tail[5:8]
+        if (tail[4] == '0'):
+            tid = tail[5:8]
+        else:
+            tid = tail[4:8]
         pid = tail[-3:]
 
+        self.log.warn(" tail: is {}, cid: is {}, tid: is {}, pid: is {} ".format(tail, cid, tid, pid))
         # if cid == "1643" or cid == "1220":
         #   imgurl = "https://web.cartoonmad.com/75699/{}/{}/{}.jpg".format(cid, tid, pid)
         # elif cid == "5531" or cid == "5187":
